@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {LineChart, PieChart} from 'react-native-chart-kit';
 import {Dimensions} from 'react-native';
 import {useTransactionContext} from '../components/TransactionContext';
@@ -21,6 +21,10 @@ const Stats = ({tabChange}: any) => {
   const [weeklyData, setWeeklyData] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<Transaction[]>([]);
   const [yearlyData, setYearlyData] = useState<Transaction[]>([]);
+
+  const memoizedFetchTransactions = useCallback(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   useEffect(() => {
     // Function to handle tab changes
@@ -45,7 +49,6 @@ const Stats = ({tabChange}: any) => {
         transactionDate <= currentWeekEnd
       );
     });
-    setWeeklyData(weekly);
 
     // Filter transactions for the current month and type "expense"
     const monthly = transactions.filter((item: any) => {
@@ -55,7 +58,6 @@ const Stats = ({tabChange}: any) => {
         item.type === 'expense' && transactionDate.getMonth() === currentMonth
       );
     });
-    setMonthlyData(monthly);
 
     // Filter transactions for the current year and type "expense"
     const yearly = transactions.filter((item: any) => {
@@ -65,14 +67,31 @@ const Stats = ({tabChange}: any) => {
         item.type === 'expense' && transactionDate.getFullYear() === currentYear
       );
     });
-    setYearlyData(yearly);
 
-    fetchTransactions();
+    // Update state only if the filtered data has changed
+    if (JSON.stringify(weekly) !== JSON.stringify(weeklyData)) {
+      setWeeklyData(weekly);
+    }
+    if (JSON.stringify(monthly) !== JSON.stringify(monthlyData)) {
+      setMonthlyData(monthly);
+    }
+    if (JSON.stringify(yearly) !== JSON.stringify(yearlyData)) {
+      setYearlyData(yearly);
+    }
+
+    memoizedFetchTransactions();
     BackHandler.addEventListener('hardwareBackPress', backBtnPress);
     return () => {
       BackHandler.removeEventListener('hardwareBackPress', backBtnPress);
     };
-  }, [transactions]);
+  }, [
+    transactions,
+    weeklyData,
+    monthlyData,
+    yearlyData,
+    memoizedFetchTransactions,
+    tabChange,
+  ]);
 
   // Weekly Data Function
   const getWeeklyData = () => {
@@ -383,8 +402,8 @@ const Stats = ({tabChange}: any) => {
                     ? getMonthlyData()
                     : getYearlyData()
                 }
-                width={Dimensions.get('window').width - 20}
-                height={220}
+                width={Dimensions.get('window').width - 30}
+                height={210}
                 chartConfig={{
                   backgroundColor: 'transparent',
                   backgroundGradientFrom: '#438883',
@@ -407,15 +426,15 @@ const Stats = ({tabChange}: any) => {
         </View>
         <View style={styles.historySec}>
           <View style={styles.historySecTopBar}>
-            <Text style={styles.heading}>Expense Overview</Text>
+            <Text style={[styles.heading, {fontSize: 16}]}>Expense Overview</Text>
           </View>
 
           {/* Pie Chart */}
           <View style={styles.pieChart}>
             <PieChart
               data={getPieChartData()}
-              width={Dimensions.get('window').width - 20} // Adjusted width to add padding
-              height={getPieChartData().length > 7 ? 180 : 200} // Conditional height based on categories
+              width={Dimensions.get('window').width - 30} // Adjusted width to add padding
+              height={getPieChartData().length > 7 ? 160 : 180} // Conditional height based on categories
               chartConfig={{
                 backgroundColor: '#f5f5f5',
                 backgroundGradientFrom: '#FFFFFF',
@@ -455,7 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF8F7',
   },
   topBar: {
-    height: 100,
+    height: 90,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
@@ -481,7 +500,8 @@ const styles = StyleSheet.create({
   },
   chartTopBar: {
     width: '100%',
-    height: 50,
+    height: 40,
+    marginBottom: 10,
     paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -506,8 +526,8 @@ const styles = StyleSheet.create({
   },
   chart: {
     width: '100%',
-    height: '85%',
-    marginVertical: 10,
+    height: '80%',
+    marginVertical: 16,
     paddingHorizontal: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -515,13 +535,13 @@ const styles = StyleSheet.create({
   historySec: {
     width: '100%',
     height: 'auto',
-    marginTop: 20,
+    marginTop: 30,
     marginBottom: 250,
   },
   historySecTopBar: {
     width: '100%',
-    height: 30,
-    paddingHorizontal: 20,
+    height: 35,
+    paddingHorizontal: 30,
   },
 
   // Transaction Item Styles
@@ -669,7 +689,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     elevation: 4,
     marginVertical: 5,
-    marginHorizontal: 10,
+    marginHorizontal: 20,
   },
   customLegend: {
     flexDirection: 'row',

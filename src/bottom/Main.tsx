@@ -3,7 +3,6 @@ import {
   BackHandler,
   FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -216,7 +215,7 @@ const Main = ({navigateToNotification}: any) => {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    marginBottom: 5,
+                    marginBottom: 2,
                   }}>
                   <View style={styles.arrowBg}>
                     <Image
@@ -239,7 +238,7 @@ const Main = ({navigateToNotification}: any) => {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    marginBottom: 5,
+                    marginBottom: 2,
                   }}>
                   <View style={styles.arrowBg}>
                     <Image
@@ -385,12 +384,13 @@ const styles = StyleSheet.create({
   textContainer: {},
   wlcmText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 12,
+    fontWeight: '600',
     zIndex: 1,
   },
   nameText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     zIndex: 1,
   },
@@ -402,12 +402,12 @@ const styles = StyleSheet.create({
   },
   heroInnerSec: {
     width: '80%',
-    height: '70%',
+    height: '80%',
     borderRadius: 20,
     alignSelf: 'center',
     backgroundColor: '#1B5C58',
     position: 'absolute',
-    top: 150,
+    top: 130,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -419,26 +419,26 @@ const styles = StyleSheet.create({
   },
   heroInnerSecText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     marginTop: 20,
     marginLeft: 20,
   },
   heroInnerSecBal: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginTop: 10,
     marginLeft: 20,
   },
   textHeading: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   textBal: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 12,
     marginLeft: 5,
   },
   arrowBg: {

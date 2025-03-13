@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   heroSec: {
     width: '100%',
-    height: '28%',
+    height: '26%',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   profileImgContainer: {
     position: 'absolute',
     alignSelf: 'center',
-    top: 160,
+    top: 140,
   },
   bottomContainer: {
     flex: 1,
@@ -258,30 +258,30 @@ const styles = StyleSheet.create({
   nameContainer: {
     width: '100%',
     height: '15%',
-    marginTop: 60,
+    marginTop: 45,
     alignItems: 'center',
     paddingVertical: 10,
   },
   name: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   userName: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#438883',
     fontWeight: '600',
     marginTop: 5,
   },
   otherOptContainer: {
     width: '100%',
-    height: '85%',
-    paddingHorizontal: 10,
-    paddingVertical: 20,
+    height: '80%',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   optContainer: {
     width: '100%',
-    height: 45,
-    marginBottom: 10,
+    height: 40,
+    marginBottom: 8,
     borderRadius: 10,
     justifyContent: 'center',
   },
@@ -294,14 +294,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   optBtnTxt: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 20,
+    marginLeft: 18,
   },
   logoutBtnTxt: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 20,
+    marginLeft: 18,
     color: 'red',
   },
   divider: {
