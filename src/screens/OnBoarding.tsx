@@ -26,31 +26,17 @@ const OnBoarding = ({ navigation }: any) => {
             </View>
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    style={styles.button}
+                    style={styles.signupButton}
                     onPress={() => navigation.replace('Signup')}
                 >
-                    <Text style={styles.btnText}>Get Started</Text>
+                    <Text style={[styles.btnText, {color: '#fff'}]}>Sign Up</Text>
                 </TouchableOpacity>
-                <View style={{
-                    marginTop: 30,
-                    width: 250,
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                }}>
-                    <Text style={{
-                        color: '#444444',
-                        fontSize: 16,
-                        fontWeight: '600',
-                    }}>Already Have Account? </Text>
-                    <TouchableOpacity onPress={() => navigation.replace('Login')}>
-                        <Text style={{
-                            color: '#438883',
-                            fontSize: 16,
-                            fontWeight: '600',
-                        }}>Log In</Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={styles.loginButton}
+                    onPress={() => navigation.replace('Login')}
+                >
+                    <Text style={styles.btnText}>Already Have an Account</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -62,6 +48,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     bg: {
         position: 'absolute',
@@ -77,9 +64,9 @@ const styles = StyleSheet.create({
         left: 50,
     },
     image: {
-        marginTop: 100,
-        width: '80%',   // Adjust width based on parent container
-        height: '45%',  // Adjust height based on parent container
+        marginTop: 80,
+        width: '80%',
+        height: '45%',
     },
     coin: {
         position: 'absolute',
@@ -88,7 +75,7 @@ const styles = StyleSheet.create({
         height: 90,
     },
     textContainer: {
-        marginTop: 50,
+        marginTop: 30,
         alignItems: 'center',
     },
     text: {
@@ -97,11 +84,13 @@ const styles = StyleSheet.create({
         color: '#438883',
     },
     buttonContainer: {
-        marginTop: 50,
+        marginTop: 40,
+        width: '80%',
+        alignItems: 'center',
     },
-    button: {
+    signupButton: {
         backgroundColor: '#3E7C78',
-        width: 250,
+        width: '100%',
         height: 50,
         borderRadius: 50,
         justifyContent: 'center',
@@ -111,9 +100,20 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         elevation: 8,
+        marginBottom: 15,
+    },
+    loginButton: {
+        backgroundColor: '#EEF8F7',
+        width: '100%',
+        height: 50,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#3E7C78',
     },
     btnText: {
-        color: 'white',
+        color: '#3E7C78',
         fontSize: 18,
         fontWeight: 'bold',
     },
