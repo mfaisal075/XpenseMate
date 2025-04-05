@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   View,
   FlatList,
+  TextInput,
 } from 'react-native';
 import {useCallback, useRef, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {Modalize} from 'react-native-modalize';
-import {Portal, Modal, TextInput, Menu, Dialog} from 'react-native-paper';
+import {Portal, Modal, Menu, Dialog} from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {openDatabase} from '../../database';
 import Toast from 'react-native-toast-message';
@@ -25,6 +26,7 @@ import RNFS from 'react-native-fs';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useTransactionContext} from '../components/TransactionContext';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Wallet = ({tabChange}: any) => {
   const [open, setOpen] = useState(false);
@@ -720,7 +722,7 @@ const Wallet = ({tabChange}: any) => {
                 setIncomeCategory('');
               }}
               style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Icon name="close" size={18} color={'#fff'} />
             </TouchableOpacity>
           </View>
           <View style={styles.modalBody}>
@@ -763,21 +765,12 @@ const Wallet = ({tabChange}: any) => {
 
             {/* Amount Input */}
             <TextInput
-              label="Amount"
-              mode="outlined"
+              placeholder="Amount"
               keyboardType="numeric"
               value={amount}
-              textColor="#000"
+              placeholderTextColor="gray"
               onChangeText={text => setAmount(text)}
               style={styles.inputField}
-              theme={{
-                colors: {
-                  primary: '#1F615C',
-                  text: '#000',
-                  placeholder: '#666',
-                  background: '#fff',
-                },
-              }}
             />
 
             {/* Date Picker */}
@@ -805,20 +798,11 @@ const Wallet = ({tabChange}: any) => {
 
             {/* Description Input */}
             <TextInput
-              label="Description"
-              mode="outlined"
+              placeholder="Description"
               value={description}
-              textColor="#000"
+              placeholderTextColor="gray"
               onChangeText={text => setDescription(text)}
               style={styles.inputField}
-              theme={{
-                colors: {
-                  primary: '#1F615C',
-                  text: '#000',
-                  placeholder: '#666',
-                  background: '#fff',
-                },
-              }}
             />
 
             <TouchableOpacity
@@ -851,7 +835,7 @@ const Wallet = ({tabChange}: any) => {
                 setExpenseCategory('');
               }}
               style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Icon name="close" size={18} color={'#fff'} />
             </TouchableOpacity>
           </View>
           <View style={styles.modalBody}>
@@ -894,21 +878,12 @@ const Wallet = ({tabChange}: any) => {
 
             {/* Amount Input */}
             <TextInput
-              label="Amount"
-              mode="outlined"
+              placeholder="Amount"
               keyboardType="numeric"
               value={expenseAmount}
-              textColor="#000"
+              placeholderTextColor="gray"
               onChangeText={text => setExpenseAmount(text)}
               style={styles.inputField}
-              theme={{
-                colors: {
-                  primary: '#1F615C',
-                  text: '#000',
-                  placeholder: '#666',
-                  background: '#fff',
-                },
-              }}
             />
 
             {/* Date Picker */}
@@ -936,20 +911,11 @@ const Wallet = ({tabChange}: any) => {
 
             {/* Description Input */}
             <TextInput
-              label="Description"
-              mode="outlined"
+              placeholder="Description"
               value={expenseDescription}
-              textColor="#000"
+              placeholderTextColor="gray"
               onChangeText={text => setExpenseDescription(text)}
               style={styles.inputField}
-              theme={{
-                colors: {
-                  primary: '#1F615C',
-                  text: '#000',
-                  placeholder: '#666',
-                  background: '#fff',
-                },
-              }}
             />
 
             <TouchableOpacity
@@ -980,68 +946,52 @@ const Wallet = ({tabChange}: any) => {
                 setCategoryImage('');
               }}
               style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Icon name="close" size={18} color={'#fff'} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.modalBody}>
             {/* Category Type Selection */}
-            <Menu
-              visible={categoryMenuVisible}
-              onDismiss={() => setCategoryMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  onPress={() => setCategoryMenuVisible(true)}
-                  style={styles.categoryField}>
-                  <Text
-                    style={{
-                      color: categoryType ? '#1F615C' : '#666', // Change color based on selection
-                      fontSize: categoryType ? 18 : 16, // Adjust font size
-                      fontWeight: categoryType ? 'bold' : 'normal', // Adjust font weight
-                    }}>
-                    {categoryType || 'Select Category Type'}
-                  </Text>
-                  {!categoryType && (
-                    <Image
-                      source={require('../assets/down-arrow-head.png')}
-                      style={{width: 35, height: 35, tintColor: '#666'}}
-                      resizeMode="contain"
-                    />
-                  )}
-                </TouchableOpacity>
-              }>
-              <Menu.Item
-                onPress={() => {
-                  setCategoryType('Income');
-                  setCategoryMenuVisible(false);
-                }}
-                title="Income"
-              />
-              <Menu.Item
-                onPress={() => {
-                  setCategoryType('Expense');
-                  setCategoryMenuVisible(false);
-                }}
-                title="Expense"
-              />
-            </Menu>
+            <DropDownPicker
+              open={categoryMenuVisible}
+              setOpen={setCategoryMenuVisible}
+              value={categoryType}
+              setValue={setCategoryType}
+              items={[
+                {label: 'Income', value: 'Income'},
+                {label: 'Expense', value: 'Expense'},
+              ]}
+              placeholder="Select Category Type"
+              style={{
+                borderColor: 'transparent',
+                backgroundColor: 'transparent',
+                borderRadius: 10,
+              }}
+              dropDownContainerStyle={{
+                borderColor: '#ccc',
+                borderRadius: 10,
+                width: '100%',
+              }}
+              placeholderStyle={{
+                color: '#666',
+                fontSize: 12,
+              }}
+              selectedItemLabelStyle={{
+                fontWeight: 'bold',
+                color: '#1F615C',
+              }}
+              listItemLabelStyle={{
+                color: '#000',
+              }}
+            />
 
             {/* Amount Input */}
             <TextInput
-              label="Category Name"
-              mode="outlined"
+              placeholder="Category Name"
               value={categoryName}
-              textColor="#000"
+              placeholderTextColor="gray"
               onChangeText={text => setCategoryName(text)}
               style={styles.inputField}
-              theme={{
-                colors: {
-                  primary: '#1F615C',
-                  text: '#000',
-                  placeholder: '#666',
-                  background: '#fff',
-                },
-              }}
             />
 
             {/* Add Image Button */}
@@ -1336,7 +1286,7 @@ const styles = StyleSheet.create({
   },
   topBarHeading: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   notificationConatiner: {
@@ -1423,14 +1373,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
+    width: 22,
+    height: 22,
+    marginRight: 12,
     tintColor: '#fff',
   },
   optionText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 
@@ -1470,12 +1420,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   headingText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 10,
   },
   typeHeading: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     marginRight: 10,
   },
@@ -1490,7 +1440,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.8,
   },
   seeAllBtn: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#000',
     fontWeight: 'bold',
   },
@@ -1500,8 +1450,9 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#000',
+    fontSize: 16,
+    color: 'gray',
+    fontWeight: 'bold',
   },
 
   // Modal Styles
@@ -1529,10 +1480,13 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   closeButton: {
-    backgroundColor: '#E57373',
+    backgroundColor: 'red',
     borderRadius: 15,
-    width: 30,
-    height: 30,
+    position: 'absolute',
+    top: -10,
+    right: 0,
+    width: 25,
+    height: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1550,9 +1504,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   inputField: {
-    backgroundColor: '#fff',
+    height: 50,
+    padding: 10,
+    borderRadius: 10,
+    borderColor: 'gray',
+    borderWidth: 1,
     color: '#000',
-    marginVertical: 5,
+    marginVertical: 10,
   },
   categoryField: {
     flexDirection: 'row',
@@ -1562,8 +1520,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     padding: 10,
     paddingRight: 11,
-    borderRadius: 5,
-    marginBottom: 5,
+    borderRadius: 10,
   },
   dateField: {
     flexDirection: 'row',
@@ -1578,27 +1535,27 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   addImgBtn: {
-    marginVertical: 10,
+    marginBottom: 10,
     paddingHorizontal: 15,
     backgroundColor: '#fff',
     borderColor: 'rgba(0, 0, 0, 0.5)',
     borderWidth: 0.8,
     width: '100%',
     height: 50,
-    borderRadius: 5,
+    borderRadius: 10,
     alignItems: 'center',
     flexDirection: 'row',
   },
   addImgIcon: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     marginRight: 10,
     tintColor: 'rgba(0, 0, 0, 0.5)',
   },
   addImgBtnText: {
     color: 'rgba(0, 0, 0, 0.5)',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 12,
   },
   addImgBtnContent: {
     flexDirection: 'row',
@@ -1608,16 +1565,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
     backgroundColor: '#1F615C',
     height: 45,
-    width: '50%',
+    width: '35%',
     alignSelf: 'center',
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: 10,
   },
   saveBtnText: {
     textAlign: 'center',
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 14,
   },
 
   // Transaction container

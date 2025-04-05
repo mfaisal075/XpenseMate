@@ -302,11 +302,23 @@ const Stats = ({tabChange}: any) => {
     <View style={styles.container}>
       {/* Top Bar */}
       <View style={styles.topBar}>
+        <Image
+          source={require('../assets/ellipse.png')}
+          style={{
+            width: 150,
+            height: 150,
+            position: 'absolute',
+            top: -5,
+            left: -5,
+            zIndex: 0,
+          }}
+          resizeMode="contain"
+        />
         <View style={styles.contentContainer}>
           <TouchableOpacity onPress={() => tabChange()}>
             <Image
               source={require('../assets/back.png')}
-              style={{width: 20, height: 20}}
+              style={{width: 20, height: 20, tintColor: '#fff'}}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -314,7 +326,7 @@ const Stats = ({tabChange}: any) => {
           <TouchableOpacity onPress={generateReport}>
             <Image
               source={require('../assets/download.png')}
-              style={{width: 25, height: 25}}
+              style={{width: 25, height: 25, tintColor: '#fff'}}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -426,7 +438,9 @@ const Stats = ({tabChange}: any) => {
         </View>
         <View style={styles.historySec}>
           <View style={styles.historySecTopBar}>
-            <Text style={[styles.heading, {fontSize: 16}]}>Expense Overview</Text>
+            <Text style={[styles.heading, {fontSize: 16}]}>
+              Expense Overview
+            </Text>
           </View>
 
           {/* Pie Chart */}
@@ -475,9 +489,13 @@ const styles = StyleSheet.create({
   },
   topBar: {
     height: 90,
+    backgroundColor: '#1F615C',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
   },
   contentContainer: {
     width: '90%',
@@ -487,7 +505,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heading: {
-    fontSize: 20,
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
   bottomContainer: {

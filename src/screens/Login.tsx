@@ -122,7 +122,7 @@ const Login = ({navigation}: any) => {
         <View
           style={{
             marginTop: 10,
-            width: 250,
+            width: '100%',
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
@@ -132,6 +132,7 @@ const Login = ({navigation}: any) => {
               color: '#444444',
               fontSize: 14,
               fontWeight: '600',
+              textAlign: 'center',
             }}>
             Forgot your password?{' '}
           </Text>
@@ -152,7 +153,7 @@ const Login = ({navigation}: any) => {
           style={{
             marginTop: 10,
             marginBottom: 10,
-            width: 250,
+            width: '100%',
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
@@ -162,6 +163,7 @@ const Login = ({navigation}: any) => {
               color: '#444444',
               fontSize: 14,
               fontWeight: '600',
+              textAlign: 'center',
             }}>
             Don't Have Account?{' '}
           </Text>
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF8F7',
   },
   contentContainer: {
-    width: '80%',
+    width: '90%',
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
@@ -236,7 +238,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'center',
     backgroundColor: '#3E7C78',
-    width: 270,
+    width: '100%',
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   eyeIconContainer: {

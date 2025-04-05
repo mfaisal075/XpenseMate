@@ -6,9 +6,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  TextInput,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import {TextInput} from 'react-native-paper';
 import {FIREBASE_AUTH} from '../../FirebaseConfig';
 import {
   fetchSignInMethodsForEmail,
@@ -39,7 +39,7 @@ const RestPassword = ({navigation}: any) => {
         Alert.alert('Error', 'No account found with this email address');
         return;
       }
-      
+
       await sendPasswordResetEmail(auth, email);
 
       Toast.show({
@@ -80,28 +80,19 @@ const RestPassword = ({navigation}: any) => {
           <Text
             style={{
               color: 'gray',
-              fontSize: 12,
-              marginBottom: 5,
+              fontSize: 10,
               fontWeight: '600',
+              textAlign: 'center',
             }}>
             No worries, we'll send you reset instructions.
           </Text>
         </View>
         <TextInput
-          label="Enter Email"
+          placeholder="Enter Email"
           value={email}
           onChangeText={setEmail}
-          mode="outlined"
-          textColor="#000"
-          style={styles.inputField}
-          theme={{
-            colors: {
-              primary: '#1F615C',
-              text: '#000',
-              placeholder: '#666',
-              background: '#fff',
-            },
-          }}
+          placeholderTextColor="gray"
+          style={styles.input}
         />
         <TouchableOpacity
           style={styles.button}
@@ -114,7 +105,7 @@ const RestPassword = ({navigation}: any) => {
           style={{
             marginTop: 10,
             marginBottom: 10,
-            width: 250,
+            width: '100%',
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
@@ -151,7 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF8F7',
   },
   contentContainer: {
-    width: '80%',
+    width: '90%',
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
@@ -165,13 +156,15 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#438883',
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   textContainer: {
+    width: '100%',
+    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -180,7 +173,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     alignSelf: 'center',
     backgroundColor: '#3E7C78',
-    width: 270,
+    width: '100%',
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',
@@ -193,13 +186,16 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  inputField: {
-    backgroundColor: '#fff',
+  input: {
+    height: 50,
+    padding: 10,
+    borderRadius: 10,
+    borderColor: 'gray',
+    borderWidth: 1,
     color: '#000',
-    marginVertical: 5,
   },
   backToLogin: {
     flexDirection: 'row',

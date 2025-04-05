@@ -135,7 +135,7 @@ const Signup = ({navigation}: any) => {
           style={{
             marginTop: 10,
             marginBottom: 10,
-            width: 250,
+            width: '100%',
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
@@ -143,7 +143,7 @@ const Signup = ({navigation}: any) => {
           <Text
             style={{
               color: '#444444',
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: '600',
             }}>
             Already Have Account?{' '}
@@ -152,7 +152,7 @@ const Signup = ({navigation}: any) => {
             <Text
               style={{
                 color: '#438883',
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: '600',
               }}>
               Log In
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF8F7',
   },
   contentContainer: {
-    width: '80%',
+    width: '90%',
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
@@ -188,14 +188,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#438883',
     alignSelf: 'center',
     marginBottom: 20,
   },
   inputContainer: {
-    marginBottom: 10,
+    marginBottom: 20,
     borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'center',
     backgroundColor: '#3E7C78',
-    width: 270,
+    width: '100%',
     height: 50,
     borderRadius: 10,
     justifyContent: 'center',
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

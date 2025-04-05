@@ -176,8 +176,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bottomIcon: {
-    width: 28,
-    height: 28,
+    width: 25,
+    height: 25,
     tintColor: '#438883',
   },
   btnContainer: {

@@ -207,6 +207,7 @@ const Main = ({navigateToNotification}: any) => {
               }}>
               <View
                 style={{
+                  marginTop: 10,
                   flexDirection: 'column',
                   justifyContent: 'flex-start',
                   alignItems: 'flex-start',
@@ -230,6 +231,7 @@ const Main = ({navigateToNotification}: any) => {
               </View>
               <View
                 style={{
+                  marginTop: 10,
                   flexDirection: 'column',
                   justifyContent: 'flex-start',
                   alignItems: 'flex-start',
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
   },
   nameText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     zIndex: 1,
   },
@@ -402,12 +404,12 @@ const styles = StyleSheet.create({
   },
   heroInnerSec: {
     width: '80%',
-    height: '80%',
+    height: '75%',
     borderRadius: 20,
     alignSelf: 'center',
     backgroundColor: '#1B5C58',
     position: 'absolute',
-    top: 130,
+    top: '55%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -426,10 +428,11 @@ const styles = StyleSheet.create({
   },
   heroInnerSecBal: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 10,
-    marginLeft: 20,
+    marginTop: 5,
+    marginBottom: 5,
+    marginHorizontal: 25,
   },
   textHeading: {
     color: '#fff',
@@ -466,11 +469,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headingText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   seeAllBtn: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'gray',
     fontWeight: 'bold',
   },
@@ -576,8 +579,9 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#000',
+    fontSize: 16,
+    color: 'gray',
+    fontWeight: 'bold',
   },
 
   // Modal Styles
