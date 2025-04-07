@@ -24,13 +24,12 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
   const [userDOB, setUserDOB] = useState('');
   const [userName, setUserName] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
-
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editAddress, setEditAddress] = useState('');
   const [editUsername, setEditUsername] = useState('');
-  const [editDOB, setEditDOB] = useState(new Date()); // Initialize with today's date
+  const [editDOB, setEditDOB] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
   const fetchUserData = async () => {
@@ -53,7 +52,7 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
         setEditEmail(userData.email);
         setEditPhone(userData.phone);
         setEditAddress(userData.address);
-        setEditUsername(`@${userData.userName}`);
+        setEditUsername(`${userData.userName}`);
         setEditDOB(userData.dob ? new Date(userData.dob) : new Date());
       }
     }
@@ -105,7 +104,7 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
         email: editEmail,
         phone: editPhone,
         address: editAddress,
-        userName: `@${editUsername}`,
+        userName: `${editUsername}`,
         dob: editDOB.toISOString().split('T')[0], // Save date in YYYY-MM-DD format
       });
       fetchUserData(); // Refresh the user data
@@ -116,6 +115,17 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
         text2: 'Your details have been successfully updated.',
       });
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ''; // Handle empty or invalid dates
+
+    const date = new Date(dateString); // Parse the date string
+    const day = String(date.getDate()).padStart(2, '0'); // Ensure 2 digits
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`; // Return formatted date
   };
 
   return (
@@ -150,7 +160,7 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
           resizeMode="cover"
         />
         <Text style={styles.userName}>{name}</Text>
-        <Text style={styles.userEmail}>{userName}</Text>
+        <Text style={styles.userEmail}>{`@${userName}`}</Text>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Email</Text>
@@ -171,7 +181,7 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Date of Birth</Text>
           <Text style={styles.infoText}>
-            {userDOB ? userDOB : 'No Date of Birth Available'}
+            {userDOB ? formatDate(userDOB) : 'No Date of Birth Available'}
           </Text>
         </View>
       </View>

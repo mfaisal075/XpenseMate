@@ -28,6 +28,33 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import {useTransactionContext} from '../components/TransactionContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+interface FormState {
+  amount: string;
+  description: string;
+  date: Date;
+  category: string;
+}
+
+const initialFormState: FormState = {
+  amount: '',
+  description: '',
+  date: new Date(),
+  category: '',
+};
+
+interface AddCategory {
+  type: string;
+  budget: string;
+  name: string;
+  image?: string;
+}
+
+const initialCategoryState: AddCategory = {
+  type: '',
+  budget: '',
+  name: '',
+};
+
 const Wallet = ({tabChange}: any) => {
   const [open, setOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
@@ -36,17 +63,12 @@ const Wallet = ({tabChange}: any) => {
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const modalizeRef = useRef<Modalize>(null);
-  const [amount, setAmount] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [expenseDescription, setExpenseDescription] = useState('');
-  const [categoryType, setCategoryType] = useState('');
-  const [categoryName, setCategoryName] = useState('');
-  const [categoryImage, setCategoryImage] = useState('');
+  const [incomeForm, setIncomeForm] = useState<FormState>(initialFormState);
+  const [expenseForm, setExpenseForm] = useState<FormState>(initialFormState);
+  const [categoryForm, setCategoryForm] =
+    useState<AddCategory>(initialCategoryState);
   const [incomeCategory, setIncomeCategory] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [expenseDate, setExpenseDate] = useState(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [expenseDatePickerVisible, setExpenseDatePickerVisible] =
     useState(false);
@@ -76,6 +98,36 @@ const Wallet = ({tabChange}: any) => {
     incomeCategories,
     expenseCategories,
   } = useTransactionContext();
+
+  const handleIncomeFormChange = (
+    field: keyof FormState,
+    value: string | Date,
+  ) => {
+    setIncomeForm(prevState => ({
+      ...prevState,
+      [field]: value,
+    }));
+  };
+
+  const handleExpenseFormChange = (
+    field: keyof FormState,
+    value: string | Date,
+  ) => {
+    setExpenseForm(prevState => ({
+      ...prevState,
+      [field]: value,
+    }));
+  };
+
+  const handleCategoryFormChange = (
+    field: keyof AddCategory,
+    value: string,
+  ) => {
+    setCategoryForm(prevState => ({
+      ...prevState,
+      [field]: value,
+    }));
+  };
 
   function setReportStartDate(visible: boolean): void {
     setStartDatePickerVisible(visible);
@@ -135,29 +187,36 @@ const Wallet = ({tabChange}: any) => {
   };
 
   const handleAddCategory = async () => {
-    if (!categoryType || !categoryName) {
-      Alert.alert('Error', 'Please fill all the fields');
-      return;
-    }
-
-    // Determine the image path
-    let localPath = '';
-    if (categoryImage) {
-      const fileName = categoryImage.split('/').pop();
-      localPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-    }
-
-    // Add category to the database
-    const db = await openDatabase();
-    const todayDate = new Date().toISOString().split('T')[0];
     try {
-      if (categoryImage) {
-        await RNFS.copyFile(categoryImage, localPath);
+      const {type, name, image} = categoryForm;
+
+      if (!type || !name) {
+        Alert.alert('Error', 'Please fill all the fields');
+        return;
       }
+
+      // Determine the image path
+      let localPath = '';
+      if (image) {
+        const fileName = image.split('/').pop();
+        localPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+      }
+
+      // Add category to the database
+      const db = await openDatabase();
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      if (image) {
+        await RNFS.copyFile(image, localPath).catch(err => {
+          console.error('Error copying image file:', err);
+          throw new Error('Failed to save the category image.');
+        });
+      }
+
       await db.transaction(async tx => {
         await tx.executeSql(
           `INSERT INTO categories (type, name, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-          [categoryType, categoryName, localPath, todayDate, todayDate],
+          [type, name, localPath, todayDate, todayDate],
         );
       });
 
@@ -167,19 +226,33 @@ const Wallet = ({tabChange}: any) => {
         text2: 'Category has been added successfully!',
       });
 
-      setCategoryType('');
-      setCategoryName('');
-      setCategoryImage('');
+      // Reset form state
+      setCategoryForm(initialCategoryState);
       setCategoryModalVisible(false);
-      fetchCategories(); // Fetch categories again to update the list
+
+      // Refresh categories
+      fetchCategories();
     } catch (error) {
-      console.log('Error in adding category', error);
-      Alert.alert('Error', 'Something went wrong. Please try again');
+      console.error('Error in adding category:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      );
     }
   };
 
-  const handleIncome = async () => {
-    if (!incomeCategory || !amount || !date || !description) {
+  const handleTransaction = async (type: 'income' | 'expense') => {
+    const isIncome = type === 'income';
+    const category = isIncome ? incomeCategory : expenseCategory;
+    const amount = isIncome ? incomeForm.amount : expenseForm.amount;
+    const date = isIncome ? incomeForm.date : expenseForm.date;
+    const description = isIncome
+      ? incomeForm.description
+      : expenseForm.description;
+
+    if (!category || !amount || !date || !description) {
       Alert.alert('Error', 'Please fill all the fields');
       return;
     }
@@ -189,90 +262,38 @@ const Wallet = ({tabChange}: any) => {
       return;
     }
 
-    // Add income to the database
+    // Add transaction to the database
     const db = await openDatabase();
     const createdDate = date.toISOString().split('T')[0];
     try {
       await db.transaction(async tx => {
         await tx.executeSql(
           `INSERT INTO transactions (amount, categoryType, category, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            amount,
-            'income',
-            incomeCategory,
-            description,
-            createdDate,
-            createdDate,
-          ],
+          [amount, type, category, description, createdDate, createdDate],
         );
       });
 
       Toast.show({
         type: 'success',
-        text1: 'Income Added',
-        text2: 'Your income entry has been added successfully!',
+        text1: `${isIncome ? 'Income' : 'Expense'} Added`,
+        text2: `Your ${
+          isIncome ? 'income' : 'expense'
+        } entry has been added successfully!`,
       });
 
-      setIncomeCategory('');
-      setAmount('');
-      setDate(new Date());
-      setDescription('');
-      setModalVisible(false);
+      if (isIncome) {
+        setIncomeCategory('');
+        setIncomeForm(initialFormState);
+        setModalVisible(false);
+      } else {
+        setExpenseCategory('');
+        setExpenseForm(initialFormState);
+        setExpenseModalVisible(false);
+      }
+
       fetchTransactions(); // Fetch transactions again to update the list
     } catch (error) {
-      console.log('Error in adding income', error);
-      Alert.alert('Error', 'Something went wrong. Please try again');
-    }
-  };
-
-  const handleExpense = async () => {
-    if (
-      !expenseCategory ||
-      !expenseAmount ||
-      !expenseDate ||
-      !expenseDescription
-    ) {
-      Alert.alert('Error', 'Please fill all the fields');
-      return;
-    }
-
-    if (!/^\d+(\.\d{1,2})?$/.test(expenseAmount)) {
-      Alert.alert('Invalid input', 'Please enter a valid amount');
-      return;
-    }
-
-    // Add expense to the database
-    const db = await openDatabase();
-    const createdDate = expenseDate.toISOString().split('T')[0];
-    try {
-      await db.transaction(async tx => {
-        await tx.executeSql(
-          `INSERT INTO transactions (amount, categoryType, category, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            expenseAmount,
-            'expense',
-            expenseCategory,
-            expenseDescription,
-            createdDate,
-            createdDate,
-          ],
-        );
-      });
-
-      Toast.show({
-        type: 'success',
-        text1: 'Expense Added',
-        text2: 'Your expense entry has been added successfully!',
-      });
-
-      setExpenseCategory('');
-      setExpenseAmount('');
-      setExpenseDate(new Date());
-      setExpenseDescription('');
-      setExpenseModalVisible(false);
-      fetchTransactions(); // Fetch transactions again to update the list
-    } catch (error) {
-      console.log('Error in adding expense', error);
+      console.log(`Error in adding ${type}`, error);
       Alert.alert('Error', 'Something went wrong. Please try again');
     }
   };
@@ -292,7 +313,7 @@ const Wallet = ({tabChange}: any) => {
       } else if (result.assets && result.assets.length > 0) {
         const uri = result.assets[0].uri;
         if (uri) {
-          setCategoryImage(uri); // Only set if uri is defined
+          handleCategoryFormChange('image', uri);
         } else {
           console.error('URI is undefined');
         }
@@ -705,10 +726,7 @@ const Wallet = ({tabChange}: any) => {
           visible={modalVisible}
           onDismiss={() => {
             setModalVisible(false);
-            setAmount('');
-            setDescription('');
-            setDate(new Date());
-            setIncomeCategory('');
+            setIncomeForm(initialFormState);
           }}
           contentContainerStyle={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -716,10 +734,7 @@ const Wallet = ({tabChange}: any) => {
             <TouchableOpacity
               onPress={() => {
                 setModalVisible(false);
-                setAmount('');
-                setDescription('');
-                setDate(new Date());
-                setIncomeCategory('');
+                setIncomeForm(initialFormState);
               }}
               style={styles.closeButton}>
               <Icon name="close" size={18} color={'#fff'} />
@@ -727,70 +742,71 @@ const Wallet = ({tabChange}: any) => {
           </View>
           <View style={styles.modalBody}>
             {/* Category Selection */}
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.categoryField}>
-                  <Text
-                    style={{
-                      color: incomeCategory ? '#1F615C' : '#666',
-                      fontSize: incomeCategory ? 18 : 16,
-                      fontWeight: incomeCategory ? 'bold' : 'normal',
-                    }}>
-                    {incomeCategory || 'Select Category'}
-                  </Text>
-                  {!incomeCategory && (
-                    <Image
-                      source={require('../assets/down-arrow-head.png')}
-                      style={{width: 35, height: 35, tintColor: '#666'}}
-                      resizeMode="contain"
-                    />
-                  )}
-                </TouchableOpacity>
-              }>
-              {incomeCategories.map((category, index) => (
-                <Menu.Item
-                  key={index}
-                  onPress={() => {
-                    setIncomeCategory(category.name);
-                    setMenuVisible(false);
-                  }}
-                  title={category.name}
-                />
-              ))}
-            </Menu>
+            <View style={styles.categoryField}>
+              <DropDownPicker
+                open={menuVisible}
+                setOpen={setMenuVisible}
+                value={incomeCategory}
+                setValue={setIncomeCategory}
+                items={incomeCategories.map(category => ({
+                  label: category.name,
+                  value: category.name,
+                }))}
+                placeholder="Select Category"
+                style={{
+                  borderColor: 'transparent',
+                  backgroundColor: 'transparent',
+                  borderRadius: 10,
+                }}
+                dropDownContainerStyle={{
+                  borderColor: '#ccc',
+                  borderRadius: 10,
+                  width: '100%',
+                  alignSelf: 'center',
+                }}
+                placeholderStyle={{
+                  color: '#666',
+                  fontSize: 16,
+                }}
+                selectedItemLabelStyle={{
+                  fontWeight: 'bold',
+                  color: '#1F615C',
+                }}
+                listItemLabelStyle={{
+                  color: '#000',
+                }}
+              />
+            </View>
 
-            {/* Amount Input */}
             <TextInput
               placeholder="Amount"
               keyboardType="numeric"
-              value={amount}
+              value={incomeForm.amount}
               placeholderTextColor="gray"
-              onChangeText={text => setAmount(text)}
+              onChangeText={text => handleIncomeFormChange('amount', text)}
               style={styles.inputField}
             />
 
             {/* Date Picker */}
             <TouchableOpacity
               onPress={() => setDatePickerVisible(true)}
-              style={styles.dateField}>
+              style={styles.categoryField}>
               <Text style={{color: '#000'}}>
-                {date ? date.toLocaleDateString() : 'Select Date'}
+                {incomeForm.date
+                  ? incomeForm.date.toLocaleDateString()
+                  : 'Select Date'}
               </Text>
             </TouchableOpacity>
             {datePickerVisible && (
               <DateTimePicker
-                value={date || new Date()} // Default to current date if no date selected
+                value={incomeForm.date || new Date()} // Default to current date if no date selected
                 mode="date"
                 display="default"
                 onChange={(event, selectedDate) => {
                   setDatePickerVisible(false); // Close the picker
                   if (event.type === 'set' && selectedDate) {
                     // Only update the date if the user selects it
-                    setDate(selectedDate);
+                    handleIncomeFormChange('date', selectedDate);
                   }
                 }}
               />
@@ -799,15 +815,15 @@ const Wallet = ({tabChange}: any) => {
             {/* Description Input */}
             <TextInput
               placeholder="Description"
-              value={description}
+              value={incomeForm.description}
               placeholderTextColor="gray"
-              onChangeText={text => setDescription(text)}
+              onChangeText={text => handleIncomeFormChange('description', text)}
               style={styles.inputField}
             />
 
             <TouchableOpacity
               style={styles.saveButton}
-              onPress={() => handleIncome()}>
+              onPress={() => handleTransaction('income')}>
               <Text style={styles.saveBtnText}>Submit</Text>
             </TouchableOpacity>
           </View>
@@ -818,10 +834,7 @@ const Wallet = ({tabChange}: any) => {
           visible={expenseModalVisible}
           onDismiss={() => {
             setExpenseModalVisible(false);
-            setExpenseAmount('');
-            setExpenseDescription('');
-            setExpenseDate(new Date());
-            setExpenseCategory('');
+            setExpenseForm(initialFormState);
           }}
           contentContainerStyle={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -829,10 +842,7 @@ const Wallet = ({tabChange}: any) => {
             <TouchableOpacity
               onPress={() => {
                 setExpenseModalVisible(false);
-                setExpenseAmount('');
-                setExpenseDescription('');
-                setExpenseDate(new Date());
-                setExpenseCategory('');
+                setExpenseForm(initialFormState);
               }}
               style={styles.closeButton}>
               <Icon name="close" size={18} color={'#fff'} />
@@ -840,70 +850,72 @@ const Wallet = ({tabChange}: any) => {
           </View>
           <View style={styles.modalBody}>
             {/* Category Selection */}
-            <Menu
-              visible={expenseMenuVisible}
-              onDismiss={() => setExpenseMenuVisible(false)}
-              anchor={
-                <TouchableOpacity
-                  onPress={() => setExpenseMenuVisible(true)}
-                  style={styles.categoryField}>
-                  <Text
-                    style={{
-                      color: expenseCategory ? '#1F615C' : '#666',
-                      fontSize: expenseCategory ? 18 : 16,
-                      fontWeight: expenseCategory ? 'bold' : 'normal',
-                    }}>
-                    {expenseCategory || 'Select Category'}
-                  </Text>
-                  {!expenseCategory && (
-                    <Image
-                      source={require('../assets/down-arrow-head.png')}
-                      style={{width: 35, height: 35, tintColor: '#666'}}
-                      resizeMode="contain"
-                    />
-                  )}
-                </TouchableOpacity>
-              }>
-              {expenseCategories.map((category, index) => (
-                <Menu.Item
-                  key={index}
-                  onPress={() => {
-                    setExpenseCategory(category.name);
-                    setExpenseMenuVisible(false);
-                  }}
-                  title={category.name}
-                />
-              ))}
-            </Menu>
+            <View style={styles.categoryField}>
+              <DropDownPicker
+                open={expenseMenuVisible}
+                setOpen={setExpenseMenuVisible}
+                value={expenseCategory}
+                setValue={setExpenseCategory}
+                items={expenseCategories.map(category => ({
+                  label: category.name,
+                  value: category.name,
+                }))}
+                placeholder="Select Category"
+                style={{
+                  borderColor: 'transparent',
+                  backgroundColor: 'transparent',
+                  borderRadius: 10,
+                }}
+                dropDownContainerStyle={{
+                  borderColor: '#ccc',
+                  borderRadius: 10,
+                  width: '100%',
+                  alignSelf: 'center',
+                }}
+                placeholderStyle={{
+                  color: '#666',
+                  fontSize: 16,
+                }}
+                selectedItemLabelStyle={{
+                  fontWeight: 'bold',
+                  color: '#1F615C',
+                }}
+                listItemLabelStyle={{
+                  color: '#000',
+                }}
+              />
+            </View>
 
             {/* Amount Input */}
             <TextInput
               placeholder="Amount"
               keyboardType="numeric"
-              value={expenseAmount}
+              value={expenseForm.amount}
               placeholderTextColor="gray"
-              onChangeText={text => setExpenseAmount(text)}
+              onChangeText={text => handleExpenseFormChange('amount', text)}
               style={styles.inputField}
             />
 
             {/* Date Picker */}
             <TouchableOpacity
               onPress={() => setExpenseDatePickerVisible(true)}
-              style={styles.dateField}>
+              style={styles.categoryField}>
               <Text style={{color: '#000'}}>
-                {expenseDate ? expenseDate.toLocaleDateString() : 'Select Date'}
+                {expenseForm.date
+                  ? expenseForm.date.toLocaleDateString()
+                  : 'Select Date'}
               </Text>
             </TouchableOpacity>
             {expenseDatePickerVisible && (
               <DateTimePicker
-                value={expenseDate || new Date()} // Default to current date if no date selected
+                value={expenseForm.date || new Date()} // Default to current date if no date selected
                 mode="date"
                 display="default"
                 onChange={(event, selectedDate) => {
                   setExpenseDatePickerVisible(false); // Close the picker
                   if (event.type === 'set' && selectedDate) {
                     // Only update the date if the user selects it
-                    setExpenseDate(selectedDate);
+                    handleIncomeFormChange('date', selectedDate);
                   }
                 }}
               />
@@ -912,15 +924,17 @@ const Wallet = ({tabChange}: any) => {
             {/* Description Input */}
             <TextInput
               placeholder="Description"
-              value={expenseDescription}
+              value={expenseForm.description}
               placeholderTextColor="gray"
-              onChangeText={text => setExpenseDescription(text)}
+              onChangeText={text =>
+                handleExpenseFormChange('description', text)
+              }
               style={styles.inputField}
             />
 
             <TouchableOpacity
               style={styles.saveButton}
-              onPress={() => handleExpense()}>
+              onPress={() => handleTransaction('expense')}>
               <Text style={styles.saveBtnText}>Submit</Text>
             </TouchableOpacity>
           </View>
@@ -931,9 +945,7 @@ const Wallet = ({tabChange}: any) => {
           visible={categoryModalVisible}
           onDismiss={() => {
             setCategoryModalVisible(false);
-            setCategoryType('');
-            setCategoryName('');
-            setCategoryImage('');
+            setCategoryForm(initialCategoryState);
           }}
           contentContainerStyle={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -941,9 +953,7 @@ const Wallet = ({tabChange}: any) => {
             <TouchableOpacity
               onPress={() => {
                 setCategoryModalVisible(false);
-                setCategoryType('');
-                setCategoryName('');
-                setCategoryImage('');
+                setCategoryForm(initialCategoryState);
               }}
               style={styles.closeButton}>
               <Icon name="close" size={18} color={'#fff'} />
@@ -952,45 +962,59 @@ const Wallet = ({tabChange}: any) => {
 
           <View style={styles.modalBody}>
             {/* Category Type Selection */}
-            <DropDownPicker
-              open={categoryMenuVisible}
-              setOpen={setCategoryMenuVisible}
-              value={categoryType}
-              setValue={setCategoryType}
-              items={[
-                {label: 'Income', value: 'Income'},
-                {label: 'Expense', value: 'Expense'},
-              ]}
-              placeholder="Select Category Type"
+            <View
               style={{
-                borderColor: 'transparent',
-                backgroundColor: 'transparent',
-                borderRadius: 10,
-              }}
-              dropDownContainerStyle={{
-                borderColor: '#ccc',
-                borderRadius: 10,
+                height: 50,
                 width: '100%',
-              }}
-              placeholderStyle={{
-                color: '#666',
-                fontSize: 12,
-              }}
-              selectedItemLabelStyle={{
-                fontWeight: 'bold',
-                color: '#1F615C',
-              }}
-              listItemLabelStyle={{
-                color: '#000',
-              }}
-            />
+                borderWidth: 0.8,
+                borderColor: '#000',
+                borderRadius: 10,
+              }}>
+              <DropDownPicker
+                open={categoryMenuVisible}
+                setOpen={setCategoryMenuVisible}
+                value={categoryForm.type}
+                setValue={callback => {
+                  const value =
+                    typeof callback === 'function' ? callback(null) : callback;
+                  handleCategoryFormChange('type', value);
+                }}
+                items={[
+                  {label: 'Income', value: 'Income'},
+                  {label: 'Expense', value: 'Expense'},
+                ]}
+                placeholder="Select Category Type"
+                style={{
+                  borderColor: 'transparent',
+                  backgroundColor: 'transparent',
+                  borderRadius: 10,
+                }}
+                dropDownContainerStyle={{
+                  borderColor: '#ccc',
+                  borderRadius: 10,
+                  width: '95%',
+                  alignSelf: 'center',
+                }}
+                placeholderStyle={{
+                  color: '#666',
+                  fontSize: 12,
+                }}
+                selectedItemLabelStyle={{
+                  fontWeight: 'bold',
+                  color: '#1F615C',
+                }}
+                listItemLabelStyle={{
+                  color: '#000',
+                }}
+              />
+            </View>
 
             {/* Amount Input */}
             <TextInput
               placeholder="Category Name"
-              value={categoryName}
+              value={categoryForm.name}
               placeholderTextColor="gray"
-              onChangeText={text => setCategoryName(text)}
+              onChangeText={text => handleCategoryFormChange('name', text)}
               style={styles.inputField}
             />
 
@@ -998,9 +1022,9 @@ const Wallet = ({tabChange}: any) => {
             <TouchableOpacity
               style={styles.addImgBtn}
               onPress={() => pickImage()}>
-              {categoryImage ? (
+              {categoryForm.image ? (
                 <Text style={styles.addImgBtnText} numberOfLines={1}>
-                  {categoryImage.split('/').pop()}
+                  {categoryForm.image.split('/').pop()}
                 </Text>
               ) : (
                 <View style={styles.addImgBtnContent}>
@@ -1170,7 +1194,8 @@ const Wallet = ({tabChange}: any) => {
                   dropDownContainerStyle={{
                     borderColor: '#ccc',
                     borderRadius: 10,
-                    width: '100%',
+                    width: '95%',
+                    alignSelf: 'center',
                   }}
                   selectedItemContainerStyle={{
                     backgroundColor: '#e0ffe0', // Green background for selected items
@@ -1254,7 +1279,7 @@ const Wallet = ({tabChange}: any) => {
                 }}
                 style={[
                   styles.saveButton,
-                  {alignSelf: 'center', marginTop: 20, width: '80%'},
+                  {alignSelf: 'center', marginTop: 20, width: '60%'},
                 ]}>
                 <Text style={styles.saveBtnText}>Generate Report</Text>
               </TouchableOpacity>
@@ -1483,8 +1508,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     borderRadius: 15,
     position: 'absolute',
-    top: -10,
-    right: 0,
+    top: -8,
+    right: -8,
     width: 25,
     height: 25,
     justifyContent: 'center',
@@ -1516,23 +1541,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 50,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderWidth: 0.8,
+    borderColor: '#000',
     padding: 10,
     paddingRight: 11,
     borderRadius: 10,
-  },
-  dateField: {
-    flexDirection: 'row',
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    padding: 10,
-    paddingRight: 11,
-    borderRadius: 5,
-    marginBottom: 5,
-    marginVertical: 5,
   },
   addImgBtn: {
     marginBottom: 10,
@@ -1565,7 +1578,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     backgroundColor: '#1F615C',
     height: 45,
-    width: '35%',
+    width: '30%',
     alignSelf: 'center',
     justifyContent: 'center',
     borderRadius: 10,
@@ -1574,7 +1587,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 12,
   },
 
   // Transaction container
@@ -1597,20 +1610,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   transactionText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   transactionTypeText: {
-    fontSize: 14,
+    fontSize: 10,
+    fontWeight: 'bold',
     color: '#6c757d',
+    letterSpacing: 1,
   },
   transactionDate: {
-    fontSize: 14,
+    fontSize: 10,
     color: '#6c757d',
+    fontWeight: 'bold',
   },
   txnPic: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     borderRadius: 10,
     shadowColor: '#000',
@@ -1621,8 +1637,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   txnPic1: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     backgroundColor: '#f0f0f0',
     shadowColor: '#000',
@@ -1643,7 +1659,7 @@ const styles = StyleSheet.create({
     flex: 1, // This will ensure the right side stays on the far end
   },
   amountText: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
   },
 
@@ -1668,17 +1684,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryNameText: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#000',
   },
   categoryTypeText: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   categoryImage: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     backgroundColor: '#f0f0f0',
     shadowColor: '#000',
@@ -1689,8 +1705,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   categoryImage2: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     borderRadius: 10,
     shadowColor: '#000',
@@ -1712,9 +1728,9 @@ const styles = StyleSheet.create({
   detailsHeading: {
     color: '#444',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 16,
     textAlign: 'center',
-    paddingBottom: 10,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
@@ -1732,10 +1748,10 @@ const styles = StyleSheet.create({
   detailSubHeading: {
     fontWeight: 'bold',
     color: '#555',
-    fontSize: 16,
+    fontSize: 14,
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#777',
   },
   dialogActions: {
@@ -1746,12 +1762,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F615C',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   closebtnTxt: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 12,
     textAlign: 'center',
   },
 

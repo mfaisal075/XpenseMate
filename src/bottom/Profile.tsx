@@ -18,6 +18,7 @@ const Profile = ({
   tabChange,
   navigateToNotification,
   goToAccountDetails,
+  goToLoginAndSecurity,
   navigateToLogin,
 }: any) => {
   const [name, setName] = useState('');
@@ -130,7 +131,7 @@ const Profile = ({
         <View style={styles.nameContainer}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.userName}>
-            {userName ? userName : '@username'}
+            {userName ? `@${userName}` : '@username'}
           </Text>
         </View>
         <View style={styles.divider} />
@@ -148,7 +149,9 @@ const Profile = ({
             </TouchableOpacity>
           </View>
           <View style={styles.optContainer}>
-            <TouchableOpacity style={styles.optBtn}>
+            <TouchableOpacity
+              style={styles.optBtn}
+              onPress={goToLoginAndSecurity}>
               <Image
                 source={require('../assets/secure.png')}
                 style={{width: 25, height: 25, tintColor: '#000'}}

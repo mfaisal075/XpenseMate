@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
     paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
   },
   txnItemLeftContainer: {
     flexDirection: 'row',
@@ -515,8 +515,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   txnPic: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     borderRadius: 10,
     shadowColor: '#000',
@@ -527,8 +527,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   txnPic1: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     marginRight: 15,
     backgroundColor: '#f0f0f0',
     shadowColor: '#000',
@@ -539,24 +539,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   transactionTypeText: {
-    fontSize: 14,
+    fontSize: 10,
+    fontWeight: 'bold',
     color: '#6c757d',
+    letterSpacing: 1,
   },
   transactionText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   transactionDate: {
-    fontSize: 14,
+    fontSize: 10,
+    fontWeight: 'bold',
     color: '#6c757d',
   },
   txnItemRightContainer: {
     justifyContent: 'center',
     alignItems: 'flex-end',
-    flex: 1, // This will ensure the right side stays on the far end
+    flex: 1, 
   },
   amountText: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   incmExpnsHistory: {
@@ -564,7 +567,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   txnContainer: {
-    flex: 1, // Take up available space
+    flex: 1, 
     width: '100%',
     marginTop: 10,
     marginBottom: 140,
@@ -595,7 +598,7 @@ const styles = StyleSheet.create({
   detailsHeading: {
     color: '#444',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 16,
     textAlign: 'center',
     paddingBottom: 10,
     borderBottomWidth: 1,
@@ -615,10 +618,10 @@ const styles = StyleSheet.create({
   detailSubHeading: {
     fontWeight: 'bold',
     color: '#555',
-    fontSize: 16,
+    fontSize: 14,
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#777',
   },
   dialogActions: {
@@ -629,12 +632,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F615C',
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   closebtnTxt: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 12,
     textAlign: 'center',
   },
 });

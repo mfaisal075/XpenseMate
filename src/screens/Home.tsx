@@ -7,6 +7,7 @@ import Stats from '../bottom/Stats';
 import {FIREBASE_AUTH} from '../../FirebaseConfig';
 import AccountDetails from '../bottom/AccountDetails';
 import {Text} from 'react-native-paper';
+import LoginSecurity from '../bottom/LoginSecurity';
 
 const Home = ({navigation}: any) => {
   const [selectedTab, setSelectedTab] = useState('Main');
@@ -16,6 +17,9 @@ const Home = ({navigation}: any) => {
   };
   const goToAccountDetails = () => {
     setSelectedTab('AccountDetails');
+  };
+  const goToLoginAndSecurity = () => {
+    setSelectedTab('LoginSecurity');
   };
   const goToProfile = () => {
     setSelectedTab('Profile');
@@ -58,100 +62,106 @@ const Home = ({navigation}: any) => {
           goToProfile={() => goToProfile()}
           navigateToNotification={() => goToNotification()}
         />
+      ) : selectedTab === 'LoginSecurity' ? (
+        <LoginSecurity goToProfile={() => goToProfile()} />
       ) : (
         <Profile
           tabChange={() => changeTab()}
           navigateToNotification={() => goToNotification()}
           goToAccountDetails={() => goToAccountDetails()}
           navigateToLogin={() => navigateToLogin()}
+          goToLoginAndSecurity={() => goToLoginAndSecurity()}
         />
       )}
-      <View style={styles.barContainer}>
-        <TouchableOpacity
-          style={styles.btnContainer}
-          onPress={() => setSelectedTab('Main')}>
-          <Image
-            source={
-              selectedTab === 'Main'
-                ? require('../assets/home.png')
-                : require('../assets/home1.png')
-            }
-            style={styles.bottomIcon}
-            resizeMode="contain"
-          />
-          <Text
-            style={
-              selectedTab === 'Main'
-                ? styles.btnText
-                : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
-            }>
-            Home
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btnContainer}
-          onPress={() => setSelectedTab('Stats')}>
-          <Image
-            source={
-              selectedTab === 'Stats'
-                ? require('../assets/stats.png')
-                : require('../assets/stats1.png')
-            }
-            style={styles.bottomIcon}
-            resizeMode="contain"
-          />
-          <Text
-            style={
-              selectedTab === 'Stats'
-                ? styles.btnText
-                : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
-            }>
-            Stats
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btnContainer}
-          onPress={() => setSelectedTab('Wallet')}>
-          <Image
-            source={
-              selectedTab === 'Wallet'
-                ? require('../assets/list.png')
-                : require('../assets/list-outline.png')
-            }
-            style={styles.bottomIcon}
-            resizeMode="contain"
-          />
-          <Text
-            style={
-              selectedTab === 'Wallet'
-                ? styles.btnText
-                : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
-            }>
-            Menu
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btnContainer}
-          onPress={() => setSelectedTab('Profile')}>
-          <Image
-            source={
-              selectedTab === 'Profile' || selectedTab === 'AccountDetails'
-                ? require('../assets/user.png')
-                : require('../assets/user1.png')
-            }
-            style={styles.bottomIcon}
-            resizeMode="contain"
-          />
-          <Text
-            style={
-              selectedTab === 'Profile'
-                ? styles.btnText
-                : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
-            }>
-            Profile
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {selectedTab === 'AccountDetails' ||
+      selectedTab === 'LoginSecurity' ? null : (
+        <View style={styles.barContainer}>
+          <TouchableOpacity
+            style={styles.btnContainer}
+            onPress={() => setSelectedTab('Main')}>
+            <Image
+              source={
+                selectedTab === 'Main'
+                  ? require('../assets/home.png')
+                  : require('../assets/home1.png')
+              }
+              style={styles.bottomIcon}
+              resizeMode="contain"
+            />
+            <Text
+              style={
+                selectedTab === 'Main'
+                  ? styles.btnText
+                  : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
+              }>
+              Home
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnContainer}
+            onPress={() => setSelectedTab('Stats')}>
+            <Image
+              source={
+                selectedTab === 'Stats'
+                  ? require('../assets/stats.png')
+                  : require('../assets/stats1.png')
+              }
+              style={styles.bottomIcon}
+              resizeMode="contain"
+            />
+            <Text
+              style={
+                selectedTab === 'Stats'
+                  ? styles.btnText
+                  : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
+              }>
+              Stats
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnContainer}
+            onPress={() => setSelectedTab('Wallet')}>
+            <Image
+              source={
+                selectedTab === 'Wallet'
+                  ? require('../assets/list.png')
+                  : require('../assets/list-outline.png')
+              }
+              style={styles.bottomIcon}
+              resizeMode="contain"
+            />
+            <Text
+              style={
+                selectedTab === 'Wallet'
+                  ? styles.btnText
+                  : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
+              }>
+              Menu
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.btnContainer}
+            onPress={() => setSelectedTab('Profile')}>
+            <Image
+              source={
+                selectedTab === 'Profile' || selectedTab === 'AccountDetails'
+                  ? require('../assets/user.png')
+                  : require('../assets/user1.png')
+              }
+              style={styles.bottomIcon}
+              resizeMode="contain"
+            />
+            <Text
+              style={
+                selectedTab === 'Profile'
+                  ? styles.btnText
+                  : {color: 'gray', fontSize: 12, fontWeight: 'bold'}
+              }>
+              Profile
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };

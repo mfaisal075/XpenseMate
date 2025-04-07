@@ -438,7 +438,7 @@ const Stats = ({tabChange}: any) => {
         </View>
         <View style={styles.historySec}>
           <View style={styles.historySecTopBar}>
-            <Text style={[styles.heading, {fontSize: 16}]}>
+            <Text style={[styles.heading, {fontSize: 14, color: '#000'}]}>
               Expense Overview
             </Text>
           </View>
