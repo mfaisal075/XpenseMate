@@ -139,14 +139,12 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
               resizeMode="contain"
             />
           </TouchableOpacity>
-          <Text style={styles.topBarHeading}>Account Details</Text>
-          <TouchableOpacity
-            style={styles.notificationContainer}
-            onPress={navigateToNotification}>
+          <Text style={styles.topBarHeading}>Personal Details</Text>
+          <TouchableOpacity style={styles.notificationContainer} disabled>
             <View style={styles.notificationRedCircle} />
             <Image
               source={require('../assets/notification.png')}
-              style={styles.icon}
+              style={[styles.icon, {tintColor: 'transparent'}]}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -309,7 +307,6 @@ const styles = StyleSheet.create({
   notificationContainer: {
     width: 40,
     height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -318,7 +315,7 @@ const styles = StyleSheet.create({
     height: 8,
     width: 8,
     borderRadius: 5,
-    backgroundColor: 'red',
+    backgroundColor: 'transparent',
     position: 'absolute',
     top: 10,
     right: 10,

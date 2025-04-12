@@ -1,35 +1,54 @@
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import React from 'react';
+import * as Animatable from 'react-native-animatable';
 
 const OnBoarding = ({navigation}: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.bg} />
-      <Image
+
+      {/* 🍩 Donut animation (bounce-in-left) */}
+      <Animatable.Image
+        animation="bounceInLeft"
+        delay={200}
+        duration={1500}
         source={require('../assets/Donut.png')}
         style={styles.donut}
         resizeMode="contain"
       />
-      <Image
+
+      {/* 🪙 Coin animation (bounce-in-right) */}
+      <Animatable.Image
+        animation="bounceInRight"
+        delay={400}
+        duration={1500}
         source={require('../assets/Coint.png')}
         style={styles.coin}
         resizeMode="contain"
       />
-      <Image
+
+      {/* 👨 Man animation (fade-in-up) */}
+      <Animatable.Image
+        animation="fadeInUp"
+        delay={600}
+        duration={1500}
         source={require('../assets/Man.png')}
         style={styles.image}
         resizeMode="contain"
       />
+
       <View style={styles.textContainer}>
         <Text style={styles.text}>Spend Smarter</Text>
         <Text style={styles.text}>Save More</Text>
       </View>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.signupButton}
           onPress={() => navigation.replace('Signup')}>
           <Text style={[styles.btnText, {color: '#fff'}]}>Sign Up</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.loginButton}
           onPress={() => navigation.replace('Login')}>
@@ -60,6 +79,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 90,
     left: 50,
+    height: 75,
   },
   image: {
     marginTop: 80,
@@ -70,7 +90,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 130,
     right: 50,
-    height: 90,
+    height: 75,
   },
   textContainer: {
     marginTop: 30,

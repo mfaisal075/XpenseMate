@@ -18,7 +18,10 @@ const Profile = ({
   tabChange,
   navigateToNotification,
   goToAccountDetails,
+  navigateToPrivacyPolicy,
+  navigateToContact,
   goToLoginAndSecurity,
+  navigateToSetting,
   navigateToLogin,
 }: any) => {
   const [name, setName] = useState('');
@@ -145,7 +148,7 @@ const Profile = ({
                 style={{width: 30, height: 30, tintColor: '#000'}}
                 resizeMode="contain"
               />
-              <Text style={styles.optBtnTxt}>Account Details</Text>
+              <Text style={styles.optBtnTxt}>Personal Details</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.optContainer}>
@@ -161,7 +164,9 @@ const Profile = ({
             </TouchableOpacity>
           </View>
           <View style={styles.optContainer}>
-            <TouchableOpacity style={styles.optBtn}>
+            <TouchableOpacity
+              style={styles.optBtn}
+              onPress={navigateToPrivacyPolicy}>
               <Image
                 source={require('../assets/padlock.png')}
                 style={{width: 25, height: 25, tintColor: '#000'}}
@@ -171,7 +176,7 @@ const Profile = ({
             </TouchableOpacity>
           </View>
           <View style={styles.optContainer}>
-            <TouchableOpacity style={styles.optBtn}>
+            <TouchableOpacity style={styles.optBtn} onPress={navigateToSetting}>
               <Image
                 source={require('../assets/setting.png')}
                 style={{width: 25, height: 25, tintColor: '#000'}}
@@ -181,7 +186,7 @@ const Profile = ({
             </TouchableOpacity>
           </View>
           <View style={styles.optContainer}>
-            <TouchableOpacity style={styles.optBtn}>
+            <TouchableOpacity style={styles.optBtn} onPress={navigateToContact}>
               <Image
                 source={require('../assets/phone.png')}
                 style={{width: 25, height: 25, tintColor: '#000'}}

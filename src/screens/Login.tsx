@@ -2,6 +2,7 @@ import {
   Alert,
   BackHandler,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -9,8 +10,15 @@ import {
   View,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import {FIREBASE_AUTH} from '../../FirebaseConfig';
+import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
 import {signInWithEmailAndPassword} from 'firebase/auth';
+import {
+  addDoc,
+  collection,
+  doc,
+  Timestamp,
+  updateDoc,
+} from 'firebase/firestore';
 
 const Login = ({navigation}: any) => {
   const [email, setEmail] = useState('');
@@ -36,6 +44,27 @@ const Login = ({navigation}: any) => {
     BackHandler.addEventListener('hardwareBackPress', backPress);
   }, []);
 
+  const logLoginHistory = async (user: any) => {
+    try {
+      const auth = FIREBASE_AUTH;
+      const user = auth.currentUser;
+      const db = FIRESTORE_DB;
+      if (user) {
+        const loginTime = new Date().toISOString();
+        await addDoc(collection(db, 'loginHistory'), {
+          userId: user.uid,
+          email: user.email,
+          loginTime: loginTime,
+          timestamp: Timestamp.now(),
+          device: Platform.OS,
+          success: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log login history:', err);
+    }
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all the fields');
@@ -44,7 +73,20 @@ const Login = ({navigation}: any) => {
     const auth = FIREBASE_AUTH;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+      const user = userCredential.user;
+
+      // 🔥 Log login to Firestore
+      await logLoginHistory(user);
+
+      await updateDoc(doc(FIRESTORE_DB, 'users', user.uid), {
+        forceLogout: false,
+      });
+
       navigation.replace('Home');
     } catch (error: any) {
       console.error('Login Error:', error.code, error.message);

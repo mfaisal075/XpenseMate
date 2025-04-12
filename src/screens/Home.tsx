@@ -4,10 +4,16 @@ import Main from '../bottom/Main';
 import Wallet from '../bottom/Wallet';
 import Profile from '../bottom/Profile';
 import Stats from '../bottom/Stats';
-import {FIREBASE_AUTH} from '../../FirebaseConfig';
+import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
 import AccountDetails from '../bottom/AccountDetails';
 import {Text} from 'react-native-paper';
 import LoginSecurity from '../bottom/LoginSecurity';
+import {doc, onSnapshot} from 'firebase/firestore';
+import Toast from 'react-native-toast-message';
+import {signOut} from 'firebase/auth';
+import Setting from '../bottom/Setting';
+import PrivacyPolicy from '../bottom/PrivacyPolicy';
+import ContactUs from '../bottom/ContactUs';
 
 const Home = ({navigation}: any) => {
   const [selectedTab, setSelectedTab] = useState('Main');
@@ -21,6 +27,15 @@ const Home = ({navigation}: any) => {
   const goToLoginAndSecurity = () => {
     setSelectedTab('LoginSecurity');
   };
+  const navigateToSetting = () => {
+    setSelectedTab('Setting');
+  };
+  const navigateToPrivacyPolicy = () => {
+    setSelectedTab('PrivacyPolicy');
+  };
+  const navigateToContact = () => {
+    setSelectedTab('ContactUs');
+  };
   const goToProfile = () => {
     setSelectedTab('Profile');
   };
@@ -33,9 +48,11 @@ const Home = ({navigation}: any) => {
   const navigateToLogin = () => {
     navigation.navigate('Login');
   };
+
   useEffect(() => {
     const auth = FIREBASE_AUTH;
     const user = auth.currentUser;
+
     if (!user) {
       Alert.alert('Error', 'Please login to continue', [
         {
@@ -43,8 +60,33 @@ const Home = ({navigation}: any) => {
           onPress: () => navigation.replace('Login'),
         },
       ]);
+      return;
     }
-  }, []);
+
+    const unsubscribeSnapshot = onSnapshot(
+      doc(FIRESTORE_DB, 'users', user.uid),
+      docSnap => {
+        const data = docSnap.data();
+        if (data?.forceLogout) {
+          Toast.show({
+            type: 'info',
+            text1: 'Logged out',
+            text2: 'You have been logged out from another device.',
+          });
+          signOut(FIREBASE_AUTH)
+            .then(() => {
+              navigation.replace('Login');
+            })
+            .catch(error => {
+              console.error('Sign out error:', error);
+            });
+        }
+      },
+    );
+
+    // Clean up the Firestore listener on unmount
+    return () => unsubscribeSnapshot();
+  }, [navigation]);
 
   return (
     <View style={styles.mainContainer}>
@@ -64,6 +106,12 @@ const Home = ({navigation}: any) => {
         />
       ) : selectedTab === 'LoginSecurity' ? (
         <LoginSecurity goToProfile={() => goToProfile()} />
+      ) : selectedTab === 'Setting' ? (
+        <Setting goToProfile={() => goToProfile()} />
+      ) : selectedTab === 'PrivacyPolicy' ? (
+        <PrivacyPolicy goToProfile={() => goToProfile()} />
+      ) : selectedTab === 'ContactUs' ? (
+        <ContactUs goToProfile={() => goToProfile()} />
       ) : (
         <Profile
           tabChange={() => changeTab()}
@@ -71,10 +119,16 @@ const Home = ({navigation}: any) => {
           goToAccountDetails={() => goToAccountDetails()}
           navigateToLogin={() => navigateToLogin()}
           goToLoginAndSecurity={() => goToLoginAndSecurity()}
+          navigateToSetting={() => navigateToSetting()}
+          navigateToPrivacyPolicy={() => navigateToPrivacyPolicy()}
+          navigateToContact={() => navigateToContact()}
         />
       )}
       {selectedTab === 'AccountDetails' ||
-      selectedTab === 'LoginSecurity' ? null : (
+      selectedTab === 'LoginSecurity' ||
+      selectedTab === 'Setting' ||
+      selectedTab === 'PrivacyPolicy' ||
+      selectedTab === 'ContactUs' ? null : (
         <View style={styles.barContainer}>
           <TouchableOpacity
             style={styles.btnContainer}
