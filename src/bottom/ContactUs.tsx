@@ -6,15 +6,106 @@ import {
   TouchableOpacity,
   Linking,
   TextInput,
+  BackHandler,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {send, EmailJSResponseStatus} from '@emailjs/react-native';
+import Toast from 'react-native-toast-message';
+
+interface FormData {
+  email: string;
+  name: string;
+  message: string;
+}
+
+const initialFormData: FormData = {
+  email: '',
+  name: '',
+  message: '',
+};
 
 const ContactUs = ({goToProfile}: any) => {
-  const [message, setMessage] = useState('');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleOnChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.email || !formData.message) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'All fields are required.',
+      });
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address.',
+      });
+      return;
+    }
+
+    const serviceId = 'service_dbp03tk';
+    const templateId = 'template_uxoiuda';
+    const publicKey = '8cMRYAwpZbX9OTVd_';
+    try {
+      await send(
+        serviceId,
+        templateId,
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          message: formData.message,
+          to_email: 'fhafiz397@gmail.com',
+          to_name: 'Mian Faisal Latif',
+        },
+        {
+          publicKey: publicKey,
+        },
+      );
+      Toast.show({
+        type: 'success',
+        text1: 'Message Sent',
+        text2: 'Your message has been sent successfully!',
+      });
+      setFormData(initialFormData);
+    } catch (err) {
+      if (err instanceof EmailJSResponseStatus) {
+        console.log('EmailJS Request Failed...', err);
+      }
+      console.log('ERROR', err);
+    }
+  };
+
+  useEffect(() => {
+    const backAction = () => {
+      goToProfile();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -35,30 +126,31 @@ const ContactUs = ({goToProfile}: any) => {
           <Text style={styles.sectionTitle}>Send us a Message</Text>
           <TextInput
             style={styles.input}
-            placeholder="Your Email"
+            placeholder="Name"
             placeholderTextColor="#888"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
+            value={formData.name}
+            onChangeText={text => handleOnChange('name', text)}
           />
           <TextInput
             style={styles.input}
-            placeholder="Subject"
+            placeholder="Your Email"
             placeholderTextColor="#888"
-            value={subject}
-            onChangeText={setSubject}
+            value={formData.email}
+            onChangeText={text => handleOnChange('email', text)}
           />
           <TextInput
             style={[styles.input, styles.messageInput]}
             placeholder="Your Message"
             placeholderTextColor="#888"
-            value={message}
-            onChangeText={setMessage}
+            value={formData.message}
+            onChangeText={text => handleOnChange('message', text)}
             multiline
             numberOfLines={4}
           />
-          <TouchableOpacity style={styles.submitButton}>
-            <Text style={styles.buttonText}>Send Message</Text>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>
+              {isSubmitting ? 'Sending...' : 'Send Message'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -78,11 +170,11 @@ const ContactUs = ({goToProfile}: any) => {
 
           <TouchableOpacity
             style={styles.contactItem}
-            onPress={() => Linking.openURL('whatsapp://send?phone=+123456789')}>
+            onPress={() => Linking.openURL('whatsapp://send?phone=+923105678901')}>
             <Icon name="whatsapp" size={24} color="#1B5C58" />
             <View style={styles.contactTextContainer}>
               <Text style={styles.contactType}>WhatsApp</Text>
-              <Text style={styles.contactDetail}>+1 (234) 567-89</Text>
+                <Text style={styles.contactDetail}>+92 310 5678901</Text>
             </View>
           </TouchableOpacity>
         </View>
