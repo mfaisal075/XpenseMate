@@ -16,7 +16,6 @@ import {doc, getDoc} from 'firebase/firestore';
 
 const Profile = ({
   tabChange,
-  navigateToNotification,
   goToAccountDetails,
   navigateToPrivacyPolicy,
   navigateToContact,
@@ -106,13 +105,10 @@ const Profile = ({
             />
           </TouchableOpacity>
           <Text style={styles.topBarHeading}>Profile</Text>
-          <TouchableOpacity
-            style={styles.notificationConatiner}
-            onPress={navigateToNotification}>
-            <View style={styles.notificationRedCircle} />
+          <TouchableOpacity style={styles.notificationConatiner} disabled>
             <Image
               source={require('../assets/notification.png')}
-              style={{width: 22, height: 22, tintColor: '#fff'}}
+              style={{width: 22, height: 22, tintColor: 'transparent'}}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -235,20 +231,9 @@ const styles = StyleSheet.create({
   notificationConatiner: {
     width: 40,
     height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  notificationRedCircle: {
-    height: 8,
-    width: 8,
-    borderRadius: 5,
-    backgroundColor: 'red',
-    position: 'absolute',
-    top: 12,
-    right: 10,
-    zIndex: 1,
   },
   topBarHeading: {
     color: '#fff',
