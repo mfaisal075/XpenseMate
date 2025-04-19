@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "304468207193",
+    "project_id": "xpensemate-4e4a5",
+    "storage_bucket": "xpensemate-4e4a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:304468207193:android:69ac893793a295478f7348",
+        "android_client_info": {
+          "package_name": "com.xpensemate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQQ_qU5j7S1r5XzjWWA4ZyjtkJYRYRCds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
