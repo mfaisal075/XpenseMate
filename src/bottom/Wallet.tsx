@@ -8,11 +8,12 @@ import {
   View,
   FlatList,
   TextInput,
+  Modal,
 } from 'react-native';
 import {useCallback, useRef, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {Modalize} from 'react-native-modalize';
-import {Portal, Modal, Menu, Dialog} from 'react-native-paper';
+import {Portal, Dialog} from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {openDatabase} from '../../database';
 import Toast from 'react-native-toast-message';
@@ -27,6 +28,7 @@ import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useTransactionContext} from '../components/TransactionContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useCurrency} from '../components/CurrencyContext';
 
 interface FormState {
   amount: string;
@@ -53,10 +55,12 @@ const initialCategoryState: AddCategory = {
   type: '',
   budget: '',
   name: '',
+  image: '',
 };
 
 const Wallet = ({tabChange}: any) => {
   const [open, setOpen] = useState(false);
+  const {getCurrencySymbol} = useCurrency();
   const [typeOpen, setTypeOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Income & Expense');
   const [modalVisible, setModalVisible] = useState(false);
@@ -188,7 +192,7 @@ const Wallet = ({tabChange}: any) => {
 
   const handleAddCategory = async () => {
     try {
-      const {type, name, image} = categoryForm;
+      const {type, name, image, budget} = categoryForm;
 
       if (!type || !name) {
         Alert.alert('Error', 'Please fill all the fields');
@@ -215,8 +219,8 @@ const Wallet = ({tabChange}: any) => {
 
       await db.transaction(async tx => {
         await tx.executeSql(
-          `INSERT INTO categories (type, name, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-          [type, name, localPath, todayDate, todayDate],
+          `INSERT INTO categories (type, name, budget, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [type, name, budget, localPath, todayDate, todayDate],
         );
       });
 
@@ -388,7 +392,8 @@ const Wallet = ({tabChange}: any) => {
                 styles.amountText,
                 {color: item.type === 'income' ? 'green' : 'red'},
               ]}>
-              {item.type === 'income' ? '+' : '-'}Rs.{formattedAmount}/-
+              {item.type === 'income' ? '+' : '-'}
+              {getCurrencySymbol()} {formattedAmount}/-
             </Text>
           </View>
         </View>
@@ -719,334 +724,364 @@ const Wallet = ({tabChange}: any) => {
         </View>
       </Modalize>
 
-      {/* Add Income, Expense & Add Category Modal */}
-      <Portal>
-        {/* Add Income Modal */}
-        <Modal
-          visible={modalVisible}
-          onDismiss={() => {
+      {/* Add Income Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => {
             setModalVisible(false);
             setIncomeForm(initialFormState);
-          }}
-          contentContainerStyle={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalHeading}>Add Income</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setModalVisible(false);
-                setIncomeForm(initialFormState);
-              }}
-              style={styles.closeButton}>
-              <Icon name="close" size={18} color={'#fff'} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.modalBody}>
-            {/* Category Selection */}
-            <View style={styles.categoryField}>
-              <DropDownPicker
-                open={menuVisible}
-                setOpen={setMenuVisible}
-                value={incomeCategory}
-                setValue={setIncomeCategory}
-                items={incomeCategories.map(category => ({
-                  label: category.name,
-                  value: category.name,
-                }))}
-                placeholder="Select Category"
-                style={{
-                  borderColor: 'transparent',
-                  backgroundColor: 'transparent',
-                  borderRadius: 10,
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Add Income</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setModalVisible(false);
+                  setIncomeForm(initialFormState);
                 }}
-                dropDownContainerStyle={{
-                  borderColor: '#ccc',
-                  borderRadius: 10,
-                  width: '100%',
-                  alignSelf: 'center',
-                }}
-                placeholderStyle={{
-                  color: '#666',
-                  fontSize: 16,
-                }}
-                selectedItemLabelStyle={{
-                  fontWeight: 'bold',
-                  color: '#1F615C',
-                }}
-                listItemLabelStyle={{
-                  color: '#000',
-                }}
-              />
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
             </View>
+            <View style={styles.modalBody}>
+              {/* Category Selection */}
+              <View style={styles.categoryField}>
+                <DropDownPicker
+                  open={menuVisible}
+                  setOpen={setMenuVisible}
+                  value={incomeCategory}
+                  setValue={setIncomeCategory}
+                  items={incomeCategories.map(category => ({
+                    label: category.name,
+                    value: category.name,
+                  }))}
+                  placeholder="Select Category"
+                  style={{
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    borderRadius: 10,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: '#ccc',
+                    borderRadius: 10,
+                    width: '100%',
+                    alignSelf: 'center',
+                  }}
+                  placeholderStyle={{
+                    color: '#666',
+                    fontSize: 16,
+                  }}
+                  selectedItemLabelStyle={{
+                    fontWeight: 'bold',
+                    color: '#1F615C',
+                  }}
+                  listItemLabelStyle={{
+                    color: '#000',
+                  }}
+                />
+              </View>
 
-            <TextInput
-              placeholder="Amount"
-              keyboardType="numeric"
-              value={incomeForm.amount}
-              placeholderTextColor="gray"
-              onChangeText={text => handleIncomeFormChange('amount', text)}
-              style={styles.inputField}
-            />
-
-            {/* Date Picker */}
-            <TouchableOpacity
-              onPress={() => setDatePickerVisible(true)}
-              style={styles.categoryField}>
-              <Text style={{color: '#000'}}>
-                {incomeForm.date
-                  ? incomeForm.date.toLocaleDateString()
-                  : 'Select Date'}
-              </Text>
-            </TouchableOpacity>
-            {datePickerVisible && (
-              <DateTimePicker
-                value={incomeForm.date || new Date()} // Default to current date if no date selected
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setDatePickerVisible(false); // Close the picker
-                  if (event.type === 'set' && selectedDate) {
-                    // Only update the date if the user selects it
-                    handleIncomeFormChange('date', selectedDate);
-                  }
-                }}
+              <TextInput
+                placeholder="Amount"
+                keyboardType="numeric"
+                value={incomeForm.amount}
+                placeholderTextColor="gray"
+                onChangeText={text => handleIncomeFormChange('amount', text)}
+                style={styles.inputField}
               />
-            )}
 
-            {/* Description Input */}
-            <TextInput
-              placeholder="Description"
-              value={incomeForm.description}
-              placeholderTextColor="gray"
-              onChangeText={text => handleIncomeFormChange('description', text)}
-              style={styles.inputField}
-            />
+              {/* Date Picker */}
+              <TouchableOpacity
+                onPress={() => setDatePickerVisible(true)}
+                style={styles.categoryField}>
+                <Text style={{color: '#000'}}>
+                  {incomeForm.date
+                    ? incomeForm.date.toLocaleDateString()
+                    : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              {datePickerVisible && (
+                <DateTimePicker
+                  value={incomeForm.date || new Date()} // Default to current date if no date selected
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setDatePickerVisible(false); // Close the picker
+                    if (event.type === 'set' && selectedDate) {
+                      // Only update the date if the user selects it
+                      handleIncomeFormChange('date', selectedDate);
+                    }
+                  }}
+                />
+              )}
 
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={() => handleTransaction('income')}>
-              <Text style={styles.saveBtnText}>Submit</Text>
-            </TouchableOpacity>
+              {/* Description Input */}
+              <TextInput
+                placeholder="Description"
+                value={incomeForm.description}
+                placeholderTextColor="gray"
+                onChangeText={text =>
+                  handleIncomeFormChange('description', text)
+                }
+                style={styles.inputField}
+              />
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleTransaction('income')}>
+                <Text style={styles.saveBtnText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Modal>
+        </TouchableOpacity>
+      </Modal>
 
-        {/* Add Expense Modal */}
-        <Modal
-          visible={expenseModalVisible}
-          onDismiss={() => {
+      {/* Add Expense Modal */}
+      <Modal visible={expenseModalVisible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => {
             setExpenseModalVisible(false);
             setExpenseForm(initialFormState);
-          }}
-          contentContainerStyle={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalHeading}>Add Expense</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setExpenseModalVisible(false);
-                setExpenseForm(initialFormState);
-              }}
-              style={styles.closeButton}>
-              <Icon name="close" size={18} color={'#fff'} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.modalBody}>
-            {/* Category Selection */}
-            <View style={styles.categoryField}>
-              <DropDownPicker
-                open={expenseMenuVisible}
-                setOpen={setExpenseMenuVisible}
-                value={expenseCategory}
-                setValue={setExpenseCategory}
-                items={expenseCategories.map(category => ({
-                  label: category.name,
-                  value: category.name,
-                }))}
-                placeholder="Select Category"
-                style={{
-                  borderColor: 'transparent',
-                  backgroundColor: 'transparent',
-                  borderRadius: 10,
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Add Expense</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setExpenseModalVisible(false);
+                  setExpenseForm(initialFormState);
                 }}
-                dropDownContainerStyle={{
-                  borderColor: '#ccc',
-                  borderRadius: 10,
-                  width: '100%',
-                  alignSelf: 'center',
-                }}
-                placeholderStyle={{
-                  color: '#666',
-                  fontSize: 16,
-                }}
-                selectedItemLabelStyle={{
-                  fontWeight: 'bold',
-                  color: '#1F615C',
-                }}
-                listItemLabelStyle={{
-                  color: '#000',
-                }}
-              />
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
             </View>
+            <View style={styles.modalBody}>
+              {/* Category Selection */}
+              <View style={styles.categoryField}>
+                <DropDownPicker
+                  open={expenseMenuVisible}
+                  setOpen={setExpenseMenuVisible}
+                  value={expenseCategory}
+                  setValue={setExpenseCategory}
+                  items={expenseCategories.map(category => ({
+                    label: category.name,
+                    value: category.name,
+                  }))}
+                  placeholder="Select Category"
+                  style={{
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    borderRadius: 10,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: '#ccc',
+                    borderRadius: 10,
+                    width: '100%',
+                    alignSelf: 'center',
+                  }}
+                  placeholderStyle={{
+                    color: '#666',
+                    fontSize: 16,
+                  }}
+                  selectedItemLabelStyle={{
+                    fontWeight: 'bold',
+                    color: '#1F615C',
+                  }}
+                  listItemLabelStyle={{
+                    color: '#000',
+                  }}
+                />
+              </View>
 
-            {/* Amount Input */}
-            <TextInput
-              placeholder="Amount"
-              keyboardType="numeric"
-              value={expenseForm.amount}
-              placeholderTextColor="gray"
-              onChangeText={text => handleExpenseFormChange('amount', text)}
-              style={styles.inputField}
-            />
-
-            {/* Date Picker */}
-            <TouchableOpacity
-              onPress={() => setExpenseDatePickerVisible(true)}
-              style={styles.categoryField}>
-              <Text style={{color: '#000'}}>
-                {expenseForm.date
-                  ? expenseForm.date.toLocaleDateString()
-                  : 'Select Date'}
-              </Text>
-            </TouchableOpacity>
-            {expenseDatePickerVisible && (
-              <DateTimePicker
-                value={expenseForm.date || new Date()} // Default to current date if no date selected
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setExpenseDatePickerVisible(false); // Close the picker
-                  if (event.type === 'set' && selectedDate) {
-                    // Only update the date if the user selects it
-                    handleIncomeFormChange('date', selectedDate);
-                  }
-                }}
+              {/* Amount Input */}
+              <TextInput
+                placeholder="Amount"
+                keyboardType="numeric"
+                value={expenseForm.amount}
+                placeholderTextColor="gray"
+                onChangeText={text => handleExpenseFormChange('amount', text)}
+                style={styles.inputField}
               />
-            )}
 
-            {/* Description Input */}
-            <TextInput
-              placeholder="Description"
-              value={expenseForm.description}
-              placeholderTextColor="gray"
-              onChangeText={text =>
-                handleExpenseFormChange('description', text)
-              }
-              style={styles.inputField}
-            />
+              {/* Date Picker */}
+              <TouchableOpacity
+                onPress={() => setExpenseDatePickerVisible(true)}
+                style={styles.categoryField}>
+                <Text style={{color: '#000'}}>
+                  {expenseForm.date
+                    ? expenseForm.date.toLocaleDateString()
+                    : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              {expenseDatePickerVisible && (
+                <DateTimePicker
+                  value={expenseForm.date || new Date()} // Default to current date if no date selected
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setExpenseDatePickerVisible(false); // Close the picker
+                    if (event.type === 'set' && selectedDate) {
+                      // Only update the date if the user selects it
+                      handleIncomeFormChange('date', selectedDate);
+                    }
+                  }}
+                />
+              )}
 
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={() => handleTransaction('expense')}>
-              <Text style={styles.saveBtnText}>Submit</Text>
-            </TouchableOpacity>
+              {/* Description Input */}
+              <TextInput
+                placeholder="Description"
+                value={expenseForm.description}
+                placeholderTextColor="gray"
+                onChangeText={text =>
+                  handleExpenseFormChange('description', text)
+                }
+                style={styles.inputField}
+              />
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleTransaction('expense')}>
+                <Text style={styles.saveBtnText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Modal>
+        </TouchableOpacity>
+      </Modal>
 
-        {/* Add Category Modal */}
-        <Modal
-          visible={categoryModalVisible}
-          onDismiss={() => {
+      {/* Add Category Modal */}
+      <Modal visible={categoryModalVisible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => {
             setCategoryModalVisible(false);
             setCategoryForm(initialCategoryState);
-          }}
-          contentContainerStyle={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalHeading}>Add Category</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setCategoryModalVisible(false);
-                setCategoryForm(initialCategoryState);
-              }}
-              style={styles.closeButton}>
-              <Icon name="close" size={18} color={'#fff'} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.modalBody}>
-            {/* Category Type Selection */}
-            <View
-              style={{
-                height: 50,
-                width: '100%',
-                borderWidth: 0.8,
-                borderColor: '#000',
-                borderRadius: 10,
-              }}>
-              <DropDownPicker
-                open={categoryMenuVisible}
-                setOpen={setCategoryMenuVisible}
-                value={categoryForm.type}
-                setValue={callback => {
-                  const value =
-                    typeof callback === 'function' ? callback(null) : callback;
-                  handleCategoryFormChange('type', value);
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Add Category</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setCategoryModalVisible(false);
+                  setCategoryForm(initialCategoryState);
                 }}
-                items={[
-                  {label: 'Income', value: 'Income'},
-                  {label: 'Expense', value: 'Expense'},
-                ]}
-                placeholder="Select Category Type"
-                style={{
-                  borderColor: 'transparent',
-                  backgroundColor: 'transparent',
-                  borderRadius: 10,
-                }}
-                dropDownContainerStyle={{
-                  borderColor: '#ccc',
-                  borderRadius: 10,
-                  width: '95%',
-                  alignSelf: 'center',
-                }}
-                placeholderStyle={{
-                  color: '#666',
-                  fontSize: 12,
-                }}
-                selectedItemLabelStyle={{
-                  fontWeight: 'bold',
-                  color: '#1F615C',
-                }}
-                listItemLabelStyle={{
-                  color: '#000',
-                }}
-              />
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
             </View>
 
-            {/* Amount Input */}
-            <TextInput
-              placeholder="Category Name"
-              value={categoryForm.name}
-              placeholderTextColor="gray"
-              onChangeText={text => handleCategoryFormChange('name', text)}
-              style={styles.inputField}
-            />
+            <View style={styles.modalBody}>
+              {/* Category Type Selection */}
+              <View
+                style={{
+                  height: 50,
+                  width: '100%',
+                  borderWidth: 0.8,
+                  borderColor: '#000',
+                  borderRadius: 10,
+                }}>
+                <DropDownPicker
+                  open={categoryMenuVisible}
+                  setOpen={setCategoryMenuVisible}
+                  value={categoryForm.type}
+                  setValue={callback => {
+                    const value =
+                      typeof callback === 'function'
+                        ? callback(null)
+                        : callback;
+                    handleCategoryFormChange('type', value);
+                  }}
+                  items={[
+                    {label: 'Income', value: 'Income'},
+                    {label: 'Expense', value: 'Expense'},
+                  ]}
+                  placeholder="Select Category Type"
+                  style={{
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    borderRadius: 10,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: '#ccc',
+                    borderRadius: 10,
+                    width: '95%',
+                    alignSelf: 'center',
+                  }}
+                  placeholderStyle={{
+                    color: '#666',
+                    fontSize: 12,
+                  }}
+                  selectedItemLabelStyle={{
+                    fontWeight: 'bold',
+                    color: '#1F615C',
+                  }}
+                  listItemLabelStyle={{
+                    color: '#000',
+                  }}
+                />
+              </View>
 
-            {/* Add Image Button */}
-            <TouchableOpacity
-              style={styles.addImgBtn}
-              onPress={() => pickImage()}>
-              {categoryForm.image ? (
-                <Text style={styles.addImgBtnText} numberOfLines={1}>
-                  {categoryForm.image.split('/').pop()}
-                </Text>
-              ) : (
-                <View style={styles.addImgBtnContent}>
-                  <Image
-                    source={require('../assets/camera.png')}
-                    style={styles.addImgIcon}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.addImgBtnText}>Add Image (Option)</Text>
-                </View>
+              {/* Category Name Input */}
+              <TextInput
+                placeholder="Category Name"
+                value={categoryForm.name}
+                placeholderTextColor="gray"
+                onChangeText={text => handleCategoryFormChange('name', text)}
+                style={styles.inputField}
+              />
+
+              {/* Add Image Button */}
+              <TouchableOpacity
+                style={styles.addImgBtn}
+                onPress={() => pickImage()}>
+                {categoryForm.image ? (
+                  <Text style={styles.addImgBtnText} numberOfLines={1}>
+                    {categoryForm.image.split('/').pop()}
+                  </Text>
+                ) : (
+                  <View style={styles.addImgBtnContent}>
+                    <Image
+                      source={require('../assets/camera.png')}
+                      style={styles.addImgIcon}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.addImgBtnText}>
+                      Add Image (Optional)
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Add Expanse CategoryBudget */}
+              {categoryForm.type === 'Expense' && (
+                <TextInput
+                  placeholder="Set Budget (Optional)"
+                  value={categoryForm.budget}
+                  placeholderTextColor="gray"
+                  onChangeText={text =>
+                    handleCategoryFormChange('budget', text)
+                  }
+                  style={styles.inputField}
+                />
               )}
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={() => handleAddCategory()}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleAddCategory()}>
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </Modal>
+        </TouchableOpacity>
+      </Modal>
 
-        {/* Transaction & Category Details Modal */}
+      {/* Transaction & Category Details Modal */}
+      <Portal>
         <Dialog
           visible={detailsVisible}
           onDismiss={closeDetailsModal}
@@ -1065,6 +1100,16 @@ const Wallet = ({tabChange}: any) => {
                   : selectedCategory?.type.toUpperCase()}
               </Text>
             </View>
+            {selectedTab === 'Categorization' &&
+              selectedCategory?.type.toLowerCase() === 'expense' && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailSubHeading}>Budget:</Text>
+                  <Text style={styles.detailValue}>
+                    {getCurrencySymbol()}{' '}
+                    {`${selectedCategory?.budget}/-` || 'N/A'}
+                  </Text>
+                </View>
+              )}
             {selectedTab === 'Income & Expense' && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailSubHeading}>Date:</Text>
@@ -1098,7 +1143,7 @@ const Wallet = ({tabChange}: any) => {
                     styles.detailValue,
                     {
                       color:
-                        selectedCategory?.type.toLocaleLowerCase() === 'income'
+                        selectedCategory?.type.toLowerCase() === 'income'
                           ? '#1F8A70'
                           : '#D9534F',
                     },
@@ -1300,6 +1345,12 @@ const styles = StyleSheet.create({
   heroSec: {
     width: '100%',
     height: '100%',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topContainer: {
     flexDirection: 'row',
@@ -1606,7 +1657,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 15,
   },
   transactionText: {
@@ -1669,7 +1720,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 15,
   },
   categoryLeftContainer: {

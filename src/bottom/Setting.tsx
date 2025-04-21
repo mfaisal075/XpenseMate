@@ -6,10 +6,14 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
+import {useCurrency} from '../components/CurrencyContext';
 
 const Setting = ({goToProfile}: any) => {
+  const {currency, setCurrency} = useCurrency();
+  const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
+
   useEffect(() => {
     const backAction = () => {
       goToProfile();
@@ -23,6 +27,24 @@ const Setting = ({goToProfile}: any) => {
 
     return () => backHandler.remove();
   }, []);
+
+  const CurrencyOption = ({
+    currency: curr,
+    name,
+  }: {
+    currency: string;
+    name: string;
+  }) => (
+    <TouchableOpacity
+      style={styles.currencyOption}
+      onPress={() => {
+        setCurrency(curr);
+        setCurrencyModalVisible(false);
+      }}>
+      <Text style={styles.currencyText}>{name}</Text>
+      {currency === curr && <Icon name="check" size={24} color="#1B5C58" />}
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -51,12 +73,21 @@ const Setting = ({goToProfile}: any) => {
             <Icon name="chevron-right" size={24} color="#1B5C58" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuButton}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setCurrencyModalVisible(true)}>
             <View style={styles.buttonContent}>
               <Icon name="cash-multiple" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonTitle}>Default Currency</Text>
-                <Text style={styles.buttonSubtitle}>USD - US Dollar</Text>
+                <Text style={styles.buttonSubtitle}>
+                  {currency} -{' '}
+                  {currency === 'USD'
+                    ? 'US Dollar'
+                    : currency === 'INR'
+                    ? 'Indian Rupee'
+                    : 'Pakistani Rupee'}
+                </Text>
               </View>
             </View>
             <Icon name="chevron-right" size={24} color="#1B5C58" />
@@ -88,6 +119,20 @@ const Setting = ({goToProfile}: any) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {isCurrencyModalVisible && (
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalBackdrop}
+          onPress={() => setCurrencyModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Select Currency</Text>
+            <CurrencyOption currency="USD" name="US Dollar" />
+            <CurrencyOption currency="INR" name="Indian Rupee" />
+            <CurrencyOption currency="PKR" name="Pakistani Rupee" />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -166,6 +211,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.6,
     marginTop: 4,
+  },
+
+  //Currency Selctor Styling
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    width: '80%',
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalTitle: {
+    color: '#1B5C58',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  currencyOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  currencyText: {
+    color: '#1B5C58',
+    fontSize: 14,
   },
 });
 

@@ -15,6 +15,7 @@ import {doc, getDoc} from 'firebase/firestore';
 import {useTransactionContext} from '../components/TransactionContext';
 import {Transaction} from '../components/Interface';
 import {Dialog, Portal} from 'react-native-paper';
+import {useCurrency} from '../components/CurrencyContext';
 
 const Main = ({navigateToNotification}: any) => {
   const [name, setName] = useState('');
@@ -22,6 +23,7 @@ const Main = ({navigateToNotification}: any) => {
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const {getCurrencySymbol} = useCurrency();
 
   const openDetailsModal = ({transaction}: any) => {
     setDetailsVisible(true);
@@ -198,7 +200,9 @@ const Main = ({navigateToNotification}: any) => {
               />
             </TouchableOpacity>
             <Text style={styles.heroInnerSecText}>Current Balance</Text>
-            <Text style={styles.heroInnerSecBal}>Rs. {formattedBalance}/-</Text>
+            <Text style={styles.heroInnerSecBal}>
+              {getCurrencySymbol()} {formattedBalance}/-
+            </Text>
             <View
               style={{
                 flexDirection: 'row',
@@ -227,7 +231,9 @@ const Main = ({navigateToNotification}: any) => {
                   </View>
                   <Text style={styles.textHeading}>Income</Text>
                 </View>
-                <Text style={styles.textBal}>Rs. {formattedIncome}/-</Text>
+                <Text style={styles.textBal}>
+                  {getCurrencySymbol()} {formattedIncome}/-
+                </Text>
               </View>
               <View
                 style={{
@@ -251,7 +257,9 @@ const Main = ({navigateToNotification}: any) => {
                   </View>
                   <Text style={styles.textHeading}>Expenses</Text>
                 </View>
-                <Text style={styles.textBal}>Rs. {formattedExpense}/-</Text>
+                <Text style={styles.textBal}>
+                  {getCurrencySymbol()} {formattedExpense}/-
+                </Text>
               </View>
             </View>
           </View>
@@ -556,7 +564,7 @@ const styles = StyleSheet.create({
   txnItemRightContainer: {
     justifyContent: 'center',
     alignItems: 'flex-end',
-    flex: 1, 
+    flex: 1,
   },
   amountText: {
     fontSize: 12,
@@ -567,7 +575,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   txnContainer: {
-    flex: 1, 
+    flex: 1,
     width: '100%',
     marginTop: 10,
     marginBottom: 140,

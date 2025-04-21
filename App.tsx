@@ -5,6 +5,7 @@ import {PaperProvider} from 'react-native-paper';
 import {initTransactionsTable, initCategoriesTable} from './database';
 import Toast from 'react-native-toast-message';
 import {TransactionProvider} from './src/components/TransactionContext';
+import {CurrencyProvider} from './src/components/CurrencyContext';
 
 const App = () => {
   useEffect(() => {
@@ -23,8 +24,10 @@ const App = () => {
     <GestureHandlerRootView>
       <PaperProvider>
         <TransactionProvider>
-          <AppNavigator />
-          <Toast />
+          <CurrencyProvider>
+            <AppNavigator />
+            <Toast />
+          </CurrencyProvider>
         </TransactionProvider>
       </PaperProvider>
     </GestureHandlerRootView>

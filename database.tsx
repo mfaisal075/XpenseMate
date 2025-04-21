@@ -46,6 +46,7 @@ const initCategoriesTable = async () => {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     type TEXT NOT NULL,
+                    budget TEXT,
                     description TEXT,
                     image TEXT,
                     created_at TEXT NOT NULL,
