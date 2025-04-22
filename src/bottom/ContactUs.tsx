@@ -7,6 +7,7 @@ import {
   Linking,
   TextInput,
   BackHandler,
+  Modal,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
@@ -26,9 +27,33 @@ const initialFormData: FormData = {
   message: '',
 };
 
+const FAQ_DATA = [
+  {
+    question: 'How do I reset my password?',
+    answer:
+      "Go to your profile settings and click 'Forgot Password'. You'll receive a password reset link via email.",
+  },
+  {
+    question: 'Why are my transactions not syncing?',
+    answer:
+      'Ensure you have an active internet connection. If the problem persists, try logging out and back in.',
+  },
+  {
+    question: 'How to export my transaction history?',
+    answer:
+      'Navigate to the Stats screen and use the download icon to generate a PDF report of your transactions.',
+  },
+  {
+    question: 'Is my financial data secure?',
+    answer:
+      'Yes, we use bank-grade encryption to protect all your financial information.',
+  },
+];
+
 const ContactUs = ({goToProfile}: any) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showFaqModal, setShowFaqModal] = useState(false);
 
   const handleOnChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
@@ -107,6 +132,35 @@ const ContactUs = ({goToProfile}: any) => {
     return () => backHandler.remove();
   }, []);
 
+  // Add FAQ modal content
+  const renderFaqModal = () => (
+    <Modal
+      visible={showFaqModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowFaqModal(false)}>
+      <TouchableOpacity
+        style={styles.modalBackdrop}
+        activeOpacity={1}
+        onPress={() => setShowFaqModal(false)}>
+        <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
+          <ScrollView>
+            {FAQ_DATA.map((faq, index) => (
+              <View key={index} style={styles.faqItem}>
+                <Text style={styles.questionText}>Q: {faq.question}</Text>
+                <Text style={styles.answerText}>A: {faq.answer}</Text>
+                {index !== FAQ_DATA.length - 1 && (
+                  <View style={styles.divider} />
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#1B5C58', '#438883']} style={styles.heroSec}>
@@ -170,17 +224,21 @@ const ContactUs = ({goToProfile}: any) => {
 
           <TouchableOpacity
             style={styles.contactItem}
-            onPress={() => Linking.openURL('whatsapp://send?phone=+923105678901')}>
+            onPress={() =>
+              Linking.openURL('whatsapp://send?phone=+923105678901')
+            }>
             <Icon name="whatsapp" size={24} color="#1B5C58" />
             <View style={styles.contactTextContainer}>
               <Text style={styles.contactType}>WhatsApp</Text>
-                <Text style={styles.contactDetail}>+92 310 5678901</Text>
+              <Text style={styles.contactDetail}>+92 310 5678901</Text>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* FAQ Section */}
-        <TouchableOpacity style={styles.section} onPress={() => {}}>
+        <TouchableOpacity
+          style={styles.section}
+          onPress={() => setShowFaqModal(true)}>
           <View style={styles.faqContainer}>
             <Icon name="help-circle-outline" size={24} color="#1B5C58" />
             <View style={styles.faqTextContainer}>
@@ -193,6 +251,9 @@ const ContactUs = ({goToProfile}: any) => {
           </View>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal */}
+      {renderFaqModal()}
     </View>
   );
 };
@@ -303,6 +364,47 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
     marginTop: 4,
+  },
+
+  //FAQs Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1B5C58',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  faqItem: {
+    paddingVertical: 12,
+  },
+  questionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1B5C58',
+    marginBottom: 8,
+  },
+  answerText: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#EEE',
+    marginVertical: 12,
   },
 });
 

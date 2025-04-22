@@ -1,13 +1,14 @@
 import {
   BackHandler,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
-import {LineChart, PieChart} from 'react-native-chart-kit';
+import {LineChart, PieChart, BarChart} from 'react-native-chart-kit';
 import {Dimensions} from 'react-native';
 import {useTransactionContext} from '../components/TransactionContext';
 import {Transaction} from '../components/Interface';
@@ -334,148 +335,166 @@ const Stats = ({tabChange}: any) => {
       </View>
 
       {/* Bottom Container */}
-      <View style={styles.bottomContainer}>
-        <View style={styles.chartContainer}>
-          <View style={styles.chartTopBar}>
-            <TouchableOpacity
-              style={
-                selectedTab === 'Weakly'
-                  ? styles.chartBtn
-                  : {
-                      width: 100,
-                      height: '100%',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: 'transparent',
-                    }
-              }
-              onPress={() => setSelectedTab('Weakly')}>
-              <Text
+      <ScrollView>
+        <View style={styles.budgetCard}>
+          <Text style={styles.budgetHeading}>Budget Overview</Text>
+          <Text style={styles.budgetText}>Total Income: Rs. 60,000</Text>
+          <Text style={styles.budgetText}>Total Expense: Rs. 35,000</Text>
+          <Text style={styles.budgetText}>Savings: Rs. 25,000</Text>
+
+          <TouchableOpacity style={styles.budgetButton}>
+            <Text style={styles.budgetButtonText}>
+              This Month's Budget: Rs. 70,000
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bottomContainer}>
+          <View style={[styles.chartContainer]}>
+            <View style={styles.chartTopBar}>
+              <TouchableOpacity
                 style={
                   selectedTab === 'Weakly'
-                    ? styles.chartBtnTxt
-                    : {color: '#000', fontWeight: 'bold'}
-                }>
-                Weekly
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={
-                selectedTab === 'Monthly'
-                  ? styles.chartBtn
-                  : {
-                      width: 100,
-                      height: '100%',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: 'transparent',
-                    }
-              }
-              onPress={() => setSelectedTab('Monthly')}>
-              <Text
+                    ? styles.chartBtn
+                    : {
+                        width: 100,
+                        height: '100%',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'transparent',
+                      }
+                }
+                onPress={() => setSelectedTab('Weakly')}>
+                <Text
+                  style={
+                    selectedTab === 'Weakly'
+                      ? styles.chartBtnTxt
+                      : {color: '#000', fontWeight: 'bold'}
+                  }>
+                  Weekly
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={
                   selectedTab === 'Monthly'
-                    ? styles.chartBtnTxt
-                    : {color: '#000', fontWeight: 'bold'}
-                }>
-                Monthly
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={
-                selectedTab === 'Yearly'
-                  ? styles.chartBtn
-                  : {
-                      width: 100,
-                      height: '100%',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: 'transparent',
-                    }
-              }
-              onPress={() => setSelectedTab('Yearly')}>
-              <Text
+                    ? styles.chartBtn
+                    : {
+                        width: 100,
+                        height: '100%',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'transparent',
+                      }
+                }
+                onPress={() => setSelectedTab('Monthly')}>
+                <Text
+                  style={
+                    selectedTab === 'Monthly'
+                      ? styles.chartBtnTxt
+                      : {color: '#000', fontWeight: 'bold'}
+                  }>
+                  Monthly
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={
                   selectedTab === 'Yearly'
-                    ? styles.chartBtnTxt
-                    : {color: '#000', fontWeight: 'bold'}
-                }>
-                Yearly
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.chart}>
-            <View style={{borderRadius: 20, overflow: 'hidden', elevation: 5}}>
-              <LineChart
-                data={
-                  selectedTab === 'Weakly'
-                    ? getWeeklyData()
-                    : selectedTab === 'Monthly'
-                    ? getMonthlyData()
-                    : getYearlyData()
+                    ? styles.chartBtn
+                    : {
+                        width: 100,
+                        height: '100%',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'transparent',
+                      }
                 }
-                width={Dimensions.get('window').width - 30}
-                height={210}
-                chartConfig={{
-                  backgroundColor: 'transparent',
-                  backgroundGradientFrom: '#438883',
-                  backgroundGradientTo: '#438883',
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                  labelColor: (opacity = 1) =>
-                    `rgba(255, 255, 255, ${opacity})`,
-                  style: {borderRadius: 16},
-                  propsForDots: {
-                    r: '6',
-                    strokeWidth: '2',
-                    stroke: '#438883',
-                  },
-                }}
-                bezier
-              />
+                onPress={() => setSelectedTab('Yearly')}>
+                <Text
+                  style={
+                    selectedTab === 'Yearly'
+                      ? styles.chartBtnTxt
+                      : {color: '#000', fontWeight: 'bold'}
+                  }>
+                  Yearly
+                </Text>
+              </TouchableOpacity>
             </View>
-          </View>
-        </View>
-        <View style={styles.historySec}>
-          <View style={styles.historySecTopBar}>
-            <Text style={[styles.heading, {fontSize: 14, color: '#000'}]}>
-              Expense Overview
-            </Text>
+            <View style={styles.chart}>
+              <View
+                style={{borderRadius: 20, overflow: 'hidden', elevation: 5}}>
+                <LineChart
+                  data={
+                    selectedTab === 'Weakly'
+                      ? getWeeklyData()
+                      : selectedTab === 'Monthly'
+                      ? getMonthlyData()
+                      : getYearlyData()
+                  }
+                  width={Dimensions.get('window').width - 30}
+                  height={210}
+                  chartConfig={{
+                    backgroundColor: 'transparent',
+                    backgroundGradientFrom: '#438883',
+                    backgroundGradientTo: '#438883',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    labelColor: (opacity = 1) =>
+                      `rgba(255, 255, 255, ${opacity})`,
+                    style: {borderRadius: 16},
+                    propsForDots: {
+                      r: '6',
+                      strokeWidth: '2',
+                      stroke: '#438883',
+                    },
+                  }}
+                  bezier
+                />
+              </View>
+            </View>
           </View>
 
-          {/* Pie Chart */}
-          <View style={styles.pieChart}>
-            <PieChart
-              data={getPieChartData()}
-              width={Dimensions.get('window').width - 30} // Adjusted width to add padding
-              height={getPieChartData().length > 7 ? 160 : 180} // Conditional height based on categories
-              chartConfig={{
-                backgroundColor: '#f5f5f5',
-                backgroundGradientFrom: '#FFFFFF',
-                backgroundGradientTo: '#FFFFFF',
-                color: (opacity = 1) => `rgba(80, 200, 120, ${opacity})`, // Emerald green for labels
-                labelColor: (opacity = 1) => `rgba(60, 60, 60, ${opacity})`, // Darker gray for labels
-              }}
-              accessor="amount"
-              backgroundColor="transparent"
-              paddingLeft="-10" // Removed padding for better alignment
-              absolute
-              avoidFalseZero
-              hasLegend={false} // Disable default legend
-            />
-            <View style={styles.customLegend}>
-              {getPieChartData().map((item, index) => (
-                <View key={index} style={styles.legendItem}>
-                  <View
-                    style={[styles.legendColor, {backgroundColor: item.color}]}
-                  />
-                  <Text style={styles.legendText}>{item.name}</Text>
-                </View>
-              ))}
+          <View style={styles.historySec}>
+            <View style={styles.historySecTopBar}>
+              <Text style={styles.chartHeading}>Expense Overview</Text>
+            </View>
+
+            {/* Pie Chart */}
+            <View style={styles.pieChart}>
+              <PieChart
+                data={getPieChartData()}
+                width={Dimensions.get('window').width - 30} // Adjusted width to add padding
+                height={getPieChartData().length > 7 ? 160 : 180} // Conditional height based on categories
+                chartConfig={{
+                  backgroundColor: '#f5f5f5',
+                  backgroundGradientFrom: '#FFFFFF',
+                  backgroundGradientTo: '#FFFFFF',
+                  color: (opacity = 1) => `rgba(80, 200, 120, ${opacity})`, // Emerald green for labels
+                  labelColor: (opacity = 1) => `rgba(60, 60, 60, ${opacity})`, // Darker gray for labels
+                }}
+                accessor="amount"
+                backgroundColor="transparent"
+                paddingLeft="-10" // Removed padding for better alignment
+                absolute
+                avoidFalseZero
+                hasLegend={false} // Disable default legend
+              />
+              <View style={styles.customLegend}>
+                {getPieChartData().map((item, index) => (
+                  <View key={index} style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendColor,
+                        {backgroundColor: item.color},
+                      ]}
+                    />
+                    <Text style={styles.legendText}>{item.name}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -515,13 +534,15 @@ const styles = StyleSheet.create({
   chartContainer: {
     width: '100%',
     height: '40%',
-    padding: 10,
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   chartTopBar: {
     width: '100%',
-    height: 40,
-    marginBottom: 10,
+    height: 35,
     paddingHorizontal: 10,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -545,17 +566,18 @@ const styles = StyleSheet.create({
   },
   chart: {
     width: '100%',
-    height: '80%',
+    height: '90%',
     marginVertical: 16,
     paddingHorizontal: 10,
+    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   historySec: {
     width: '100%',
     height: 'auto',
-    marginTop: 30,
-    marginBottom: 250,
+    marginBottom: 30,
+    marginTop: 35,
   },
   historySecTopBar: {
     width: '100%',
@@ -730,5 +752,51 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: '#000',
+  },
+
+  // Budget Card Styles
+  scrollContent: {
+    paddingBottom: 5,
+  },
+  budgetCard: {
+    backgroundColor: '#E8F6EF',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  budgetHeading: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F615C',
+    marginBottom: 8,
+  },
+  budgetText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  budgetButton: {
+    backgroundColor: '#1F615C',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+
+  budgetButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  chartHeading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 });

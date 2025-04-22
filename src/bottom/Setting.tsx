@@ -1,7 +1,10 @@
 import {
   BackHandler,
+  Modal,
   StyleSheet,
+  Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -10,9 +13,14 @@ import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {useCurrency} from '../components/CurrencyContext';
 
-const Setting = ({goToProfile}: any) => {
+const Setting = ({goToProfile, navigateToContact}: any) => {
   const {currency, setCurrency} = useCurrency();
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [isNotificationModalVisible, setNotificationModalVisible] =
+    useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [isBudgetModalVisible, setBudgetModalVisible] = useState(false);
+  const [monthlyBudget, setMonthlyBudget] = useState('');
 
   useEffect(() => {
     const backAction = () => {
@@ -60,7 +68,9 @@ const Setting = ({goToProfile}: any) => {
       <View style={styles.bottomContainer}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>General Settings</Text>
-          <TouchableOpacity style={styles.menuButton}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setBudgetModalVisible(true)}>
             <View style={styles.buttonContent}>
               <Icon name="wallet" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
@@ -93,12 +103,31 @@ const Setting = ({goToProfile}: any) => {
             <Icon name="chevron-right" size={24} color="#1B5C58" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuButton}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => setNotificationModalVisible(true)}>
             <View style={styles.buttonContent}>
               <Icon name="bell" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonTitle}>Notifications</Text>
-                <Text style={styles.buttonSubtitle}>Manage preferences</Text>
+                <Text style={styles.buttonSubtitle}>
+                  {notificationEnabled ? 'Enabled' : 'Disabled'}{' '}
+                </Text>
+              </View>
+            </View>
+            <Icon name="chevron-right" size={24} color="#1B5C58" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Support</Text>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={navigateToContact}>
+            <View style={styles.buttonContent}>
+              <Icon name="help-circle" size={24} color="#1B5C58" />
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonTitle}>Help & Support</Text>
+                <Text style={styles.buttonSubtitle}>Contact our team</Text>
               </View>
             </View>
             <Icon name="chevron-right" size={24} color="#1B5C58" />
@@ -106,13 +135,26 @@ const Setting = ({goToProfile}: any) => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <TouchableOpacity style={styles.menuButton}>
+          <Text style={styles.sectionTitle}>Data Management</Text>
+          <TouchableOpacity style={styles.menuButton} onPress={() => {}}>
             <View style={styles.buttonContent}>
-              <Icon name="help-circle" size={24} color="#1B5C58" />
+              <Icon name="database-import" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Help & Support</Text>
-                <Text style={styles.buttonSubtitle}>Contact our team</Text>
+                <Text style={styles.buttonTitle}>Import Data</Text>
+                <Text style={styles.buttonSubtitle}>
+                  Restore from backup file
+                </Text>
+              </View>
+            </View>
+            <Icon name="chevron-right" size={24} color="#1B5C58" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuButton} onPress={() => {}}>
+            <View style={styles.buttonContent}>
+              <Icon name="database-export" size={24} color="#1B5C58" />
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonTitle}>Export Data</Text>
+                <Text style={styles.buttonSubtitle}>Create backup file</Text>
               </View>
             </View>
             <Icon name="chevron-right" size={24} color="#1B5C58" />
@@ -124,12 +166,103 @@ const Setting = ({goToProfile}: any) => {
         <TouchableOpacity
           activeOpacity={1}
           style={styles.modalBackdrop}
-          onPress={() => setCurrencyModalVisible(false)}>
+          onPress={e => {
+            if (e.target === e.currentTarget) {
+              setCurrencyModalVisible(false);
+            }
+          }}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Select Currency</Text>
             <CurrencyOption currency="USD" name="US Dollar" />
             <CurrencyOption currency="INR" name="Indian Rupee" />
             <CurrencyOption currency="PKR" name="Pakistani Rupee" />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Notification Modal */}
+      <Modal
+        visible={isNotificationModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNotificationModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPressOut={() => setNotificationModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Notification Settings</Text>
+            <View style={styles.notificationOption}>
+              <Text style={styles.currencyText}>Enable Notifications</Text>
+              <Switch
+                value={notificationEnabled}
+                onValueChange={value => setNotificationEnabled(value)}
+                thumbColor={notificationEnabled ? '#1B5C58' : '#f4f3f4'}
+                trackColor={{false: '#767577', true: '#43888380'}}
+              />
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Budget Modal */}
+      {isBudgetModalVisible && (
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalBackdrop}
+          onPress={e => {
+            if (e.target === e.currentTarget) {
+              setBudgetModalVisible(false);
+            }
+          }}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Set Monthly Budget</Text>
+            <TextInput
+              placeholder="Enter amount"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+              value={monthlyBudget}
+              onChangeText={setMonthlyBudget}
+              style={{
+                borderWidth: 1,
+                borderColor: '#ddd',
+                borderRadius: 8,
+                padding: 10,
+                marginBottom: 16,
+                color: '#1B5C58',
+              }}
+            />
+
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#1B5C58',
+                  padding: 10,
+                  borderRadius: 8,
+                  flex: 1,
+                  marginRight: 8,
+                }}
+                onPress={() => {
+                  // Save the budget here (can be to local storage or backend)
+                  setBudgetModalVisible(false);
+                }}>
+                <Text style={{color: '#fff', textAlign: 'center'}}>Save</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#ddd',
+                  padding: 10,
+                  borderRadius: 8,
+                  flex: 1,
+                }}
+                onPress={() => setBudgetModalVisible(false)}>
+                <Text style={{color: '#1B5C58', textAlign: 'center'}}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       )}
@@ -247,6 +380,17 @@ const styles = StyleSheet.create({
   currencyText: {
     color: '#1B5C58',
     fontSize: 14,
+  },
+
+  //Notification Modal Styling
+  notificationOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    width: '100%',
   },
 });
 

@@ -123,7 +123,7 @@ const Main = ({navigateToNotification}: any) => {
             <Image
               source={
                 item.categoryImage
-                  ? {uri: `file://${item.categoryImage}`} // Load category image URI from database
+                  ? {uri: `file://${item.categoryImage}`}
                   : item.type === 'Income'
                   ? require('../assets/income.png')
                   : require('../assets/expense.png')
@@ -148,7 +148,8 @@ const Main = ({navigateToNotification}: any) => {
                 styles.amountText,
                 {color: item.type === 'income' ? 'green' : 'red'},
               ]}>
-              {item.type === 'income' ? '+' : '-'}Rs.{formattedAmount}/-
+              {item.type === 'income' ? '+' : '-'}
+              {getCurrencySymbol()} {formattedAmount}/-
             </Text>
           </View>
         </View>
@@ -279,6 +280,8 @@ const Main = ({navigateToNotification}: any) => {
                   keyExtractor={item => `${item.type}-${item.id}`}
                   renderItem={renderItem}
                   contentContainerStyle={styles.list}
+                  initialNumToRender={5}
+                  windowSize={10}
                 />
               </View>
             ) : (

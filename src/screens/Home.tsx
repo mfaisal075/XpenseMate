@@ -107,7 +107,10 @@ const Home = ({navigation}: any) => {
       ) : selectedTab === 'LoginSecurity' ? (
         <LoginSecurity goToProfile={() => goToProfile()} />
       ) : selectedTab === 'Setting' ? (
-        <Setting goToProfile={() => goToProfile()} />
+        <Setting
+          goToProfile={() => goToProfile()}
+          navigateToContact={() => navigateToContact()}
+        />
       ) : selectedTab === 'PrivacyPolicy' ? (
         <PrivacyPolicy goToProfile={() => goToProfile()} />
       ) : selectedTab === 'ContactUs' ? (
