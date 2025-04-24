@@ -6,12 +6,26 @@ import {
   TouchableOpacity,
   Linking,
   SafeAreaView,
+  BackHandler,
 } from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const PrivacyPolicy = ({goToProfile}: any) => {
+  useEffect(() => {
+    const backAction = () => {
+      goToProfile();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, []);
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#1B5C58', '#438883']} style={styles.heroSec}>

@@ -10,7 +10,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
-import {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {Modalize} from 'react-native-modalize';
 import {Portal, Dialog} from 'react-native-paper';
@@ -29,6 +29,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import {useTransactionContext} from '../components/TransactionContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useCurrency} from '../components/CurrencyContext';
+import ActionSheet from '../components/ActionSheet';
 
 interface FormState {
   amount: string;
@@ -57,6 +58,12 @@ const initialCategoryState: AddCategory = {
   name: '',
   image: '',
 };
+
+interface ActionSheetOption {
+  label: string;
+  icon: string;
+  action: () => void;
+}
 
 const Wallet = ({tabChange}: any) => {
   const [open, setOpen] = useState(false);
@@ -94,6 +101,60 @@ const Wallet = ({tabChange}: any) => {
   const [selectedReportCategories, setSelectedReportCategories] = useState<
     string[]
   >([]);
+  const [editModal, setEditModal] = useState('');
+
+  const actionSheetRef = React.useRef<Modalize>(null);
+  const [actionSheetOptions, setActionSheetOptions] = useState<
+    ActionSheetOption[]
+  >([]);
+
+  const showActionSheet = (options: ActionSheetOption[]) => {
+    setActionSheetOptions(options);
+    actionSheetRef.current?.open();
+  };
+
+  const hideActionSheet = () => {
+    actionSheetRef.current?.close();
+  };
+
+  const showCategoryActions = (category: Categories) => {
+    showActionSheet([
+      {
+        label: 'Edit Category',
+        icon: 'pencil',
+        action: () => {
+          hideActionSheet();
+        },
+      },
+      {
+        label: 'Delete Category',
+        icon: 'trash-can',
+        action: () => {
+          hideActionSheet();
+        },
+      },
+    ]);
+  };
+
+  const showTransactionActions = (transaction: Transaction) => {
+    showActionSheet([
+      {
+        label: 'Edit Transaction',
+        icon: 'pencil',
+        action: () => {
+          hideActionSheet();
+        },
+      },
+      {
+        label: 'Delete Transaction',
+        icon: 'trash-can',
+        action: () => {
+          hideActionSheet();
+        },
+      },
+    ]);
+  };
+
   const {
     fetchTransactions,
     fetchCategories,
@@ -361,7 +422,9 @@ const Wallet = ({tabChange}: any) => {
     const formattedAmount = new Intl.NumberFormat('en-US').format(item.amount);
 
     return (
-      <TouchableOpacity onPress={() => openDetailsModal({transaction: item})}>
+      <TouchableOpacity
+        onPress={() => openDetailsModal({transaction: item})}
+        onLongPress={() => showTransactionActions(item)}>
         <View style={styles.transactionItem}>
           <View style={styles.txnItemLeftContainer}>
             <Image
@@ -403,7 +466,9 @@ const Wallet = ({tabChange}: any) => {
 
   const renderCategoryItem = ({item}: any) => {
     return (
-      <TouchableOpacity onPress={() => openDetailsModal({category: item})}>
+      <TouchableOpacity
+        onPress={() => openDetailsModal({category: item})}
+        onLongPress={() => showCategoryActions(item)}>
         <View style={styles.categoryItemContainer}>
           <View style={styles.categoryLeftContainer}>
             <Image
@@ -670,6 +735,8 @@ const Wallet = ({tabChange}: any) => {
           )}
         </View>
       </LinearGradient>
+
+      <ActionSheet ref={actionSheetRef} options={actionSheetOptions} />
 
       {/* Bottom Sheet */}
       <Modalize
@@ -1114,7 +1181,17 @@ const Wallet = ({tabChange}: any) => {
               <View style={styles.detailRow}>
                 <Text style={styles.detailSubHeading}>Date:</Text>
                 <Text style={styles.detailValue}>
-                  {selectedTransaction?.date}
+                  {selectedTransaction?.date
+                    ? new Date(selectedTransaction.date).toLocaleDateString(
+                        'en-US',
+                        {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        },
+                      )
+                    : ''}
                 </Text>
               </View>
             )}
@@ -1135,7 +1212,7 @@ const Wallet = ({tabChange}: any) => {
                           : '#D9534F',
                     },
                   ]}>
-                  Rs.{selectedTransaction?.amount}/-
+                  {getCurrencySymbol()} {selectedTransaction?.amount}/-
                 </Text>
               ) : (
                 <Text

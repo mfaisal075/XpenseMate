@@ -312,7 +312,17 @@ const Main = ({navigateToNotification}: any) => {
             <View style={styles.detailRow}>
               <Text style={styles.detailSubHeading}>Date:</Text>
               <Text style={styles.detailValue}>
-                {selectedTransaction?.date}
+                {selectedTransaction?.date
+                  ? new Date(selectedTransaction.date).toLocaleDateString(
+                      'en-US',
+                      {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      },
+                    )
+                  : ''}
               </Text>
             </View>
             <View style={styles.detailRow}>

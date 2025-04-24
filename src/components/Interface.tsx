@@ -1,9 +1,12 @@
 export interface Categories {
   id: number;
   name: string;
-  type: 'income' | 'expense';
+  type: string;
   description: string;
   budget: string;
+  image: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Transaction {
@@ -12,5 +15,7 @@ export interface Transaction {
   category: string;
   description: string;
   date: string;
-  type: string; // Added to differentiate transactions
+  type: string;
+  created_at?: string;
+  updated_at?: string;
 }

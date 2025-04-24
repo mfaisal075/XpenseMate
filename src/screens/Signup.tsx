@@ -111,6 +111,15 @@ const Signup = ({navigation}: any) => {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
+            placeholder="Phone Number"
+            keyboardType='number-pad'
+            placeholderTextColor={'gray'}
+            
+          />
+        </View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
             placeholder="Password"
             value={password}
             onChangeText={setPassword}

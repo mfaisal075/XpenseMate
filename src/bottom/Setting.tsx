@@ -12,9 +12,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {useCurrency} from '../components/CurrencyContext';
+import {useTransactionContext} from '../components/TransactionContext';
 
 const Setting = ({goToProfile, navigateToContact}: any) => {
   const {currency, setCurrency} = useCurrency();
+  const {exportToExcel, importDataFromExcel} = useTransactionContext();
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] =
     useState(false);
@@ -136,7 +138,9 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
-          <TouchableOpacity style={styles.menuButton} onPress={() => {}}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={importDataFromExcel}>
             <View style={styles.buttonContent}>
               <Icon name="database-import" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
@@ -149,7 +153,7 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
             <Icon name="chevron-right" size={24} color="#1B5C58" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuButton} onPress={() => {}}>
+          <TouchableOpacity style={styles.menuButton} onPress={exportToExcel}>
             <View style={styles.buttonContent}>
               <Icon name="database-export" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
