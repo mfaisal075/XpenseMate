@@ -13,7 +13,7 @@ import {
 import React, {useCallback, useRef, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {Modalize} from 'react-native-modalize';
-import {Portal, Dialog} from 'react-native-paper';
+import {Portal, Dialog, Button} from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {openDatabase} from '../../database';
 import Toast from 'react-native-toast-message';
@@ -102,11 +102,237 @@ const Wallet = ({tabChange}: any) => {
     string[]
   >([]);
   const [editModal, setEditModal] = useState('');
-
+  const [deleteModal, setDeleteModal] = useState('');
   const actionSheetRef = React.useRef<Modalize>(null);
   const [actionSheetOptions, setActionSheetOptions] = useState<
     ActionSheetOption[]
   >([]);
+
+  const toggleEditModal = (modal: string) => {
+    setEditModal(modal);
+  };
+
+  const toggleDeleteModal = (modal: string) => {
+    setDeleteModal(modal);
+  };
+
+  const handleUpdateCategory = async () => {
+    try {
+      const {type, name, image, budget} = categoryForm;
+
+      if (!categoryForm.name || !categoryForm.type) {
+        Alert.alert('Error', 'Please fill all the fields');
+        return;
+      }
+
+      // Determine the image path
+      let localPath = selectedCategory?.image || '';
+      if (image) {
+        const fileName = image.split('/').pop();
+        localPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+      }
+
+      const db = await openDatabase();
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      if (image && image !== selectedCategory?.image) {
+        const fileName = image.split('/').pop();
+        localPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+
+        await RNFS.copyFile(image, localPath).catch(err => {
+          console.error('Error copying image file:', err);
+          throw new Error('Failed to save the category image.');
+        });
+      }
+
+      await db.transaction(async tx => {
+        await tx.executeSql(
+          `UPDATE categories SET type = ?, name = ?, budget = ?, image = ?, updated_at = ? WHERE id = ?`,
+          [type, name, budget, localPath, todayDate, selectedCategory?.id],
+          (_, result) => {
+            console.log('Update success:', result);
+          },
+          (_, error) => {
+            console.log('Update error:', error);
+            return true; // indicate error
+          },
+        );
+      });
+
+      console.log('Updating with:', {
+        type,
+        name,
+        budget,
+        localPath,
+        id: selectedCategory?.id,
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Category Updated',
+        text2: 'Category has been updated successfully!',
+      });
+
+      setSelectedCategory(null);
+      setCategoryForm(initialCategoryState);
+      setEditModal('');
+      fetchCategories();
+    } catch (error) {
+      console.error('Error in updating category:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      );
+    }
+  };
+
+  const handleUpdateTxns = async () => {
+    try {
+      if (!selectedTransaction) return;
+
+      const isIncome = selectedTransaction.type === 'income';
+      const category = isIncome ? incomeCategory : expenseCategory;
+      const amount = isIncome ? incomeForm.amount : expenseForm.amount;
+      const date = isIncome ? incomeForm.date : expenseForm.date;
+      const description = isIncome
+        ? incomeForm.description
+        : expenseForm.description;
+
+      if (!category || !amount || !date || !description) {
+        Alert.alert('Error', 'Please fill all the fields');
+        return;
+      }
+
+      if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
+        Alert.alert('Invalid input', 'Please enter a valid amount');
+        return;
+      }
+
+      const db = await openDatabase();
+      const updatedDate = new Date().toISOString().split('T')[0];
+      const transactionDate = date.toISOString().split('T')[0];
+
+      await db.transaction(async tx => {
+        await tx.executeSql(
+          `UPDATE transactions SET 
+            amount = ?, 
+            categoryType = ?, 
+            category = ?, 
+            description = ?, 
+            date = ?, 
+            updated_at = ? 
+           WHERE id = ?`,
+          [
+            parseFloat(amount),
+            selectedTransaction.type,
+            category,
+            description,
+            transactionDate,
+            updatedDate,
+            selectedTransaction.id,
+          ],
+        );
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Transaction Updated',
+        text2: 'Transaction has been updated successfully!',
+      });
+
+      // Reset states
+      if (isIncome) {
+        setIncomeCategory('');
+        setIncomeForm(initialFormState);
+      } else {
+        setExpenseCategory('');
+        setExpenseForm(initialFormState);
+      }
+
+      setEditModal('');
+      setSelectedTransaction(null);
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      Alert.alert('Error', 'Failed to update transaction');
+    }
+  };
+
+  const deleteCategory = async () => {
+    try {
+      const db = await openDatabase();
+      await db.transaction(async tx => {
+        await tx.executeSql(
+          `UPDATE categories SET status = 'N' WHERE id = ?`,
+          [selectedCategory?.id],
+          (_, result) => {
+            console.log('Status update success:', result);
+          },
+          (_, error) => {
+            console.log('Status update error:', error);
+            return true; // indicate error
+          },
+        );
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Category Deleted',
+        text2: 'Category has been marked as inactive successfully!',
+      });
+
+      setSelectedCategory(null);
+      setDeleteModal('');
+      fetchCategories();
+    } catch (error) {
+      console.error('Error in updating category status:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      );
+    }
+  };
+
+  const deleteTransaction = async () => {
+    try {
+      const db = await openDatabase();
+      await db.transaction(async tx => {
+        await tx.executeSql(
+          `UPDATE transactions SET status = 'N' WHERE id = ?`,
+          [selectedTransaction?.id],
+          (_, result) => {
+            console.log('Status update success:', result);
+          },
+          (_, error) => {
+            console.log('Status update error:', error);
+            return true; // indicate error
+          },
+        );
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Transaction Deleted',
+        text2: 'Transaction has been marked as inactive successfully!',
+      });
+
+      setSelectedTransaction(null);
+      setDeleteModal('');
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error in updating transaction status:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      );
+    }
+  };
 
   const showActionSheet = (options: ActionSheetOption[]) => {
     setActionSheetOptions(options);
@@ -124,6 +350,14 @@ const Wallet = ({tabChange}: any) => {
         icon: 'pencil',
         action: () => {
           hideActionSheet();
+          toggleEditModal('editCategory');
+          setSelectedCategory(category);
+          setCategoryForm({
+            type: category.type,
+            name: category.name,
+            budget: category.budget || '',
+            image: category.image || '',
+          });
         },
       },
       {
@@ -131,6 +365,8 @@ const Wallet = ({tabChange}: any) => {
         icon: 'trash-can',
         action: () => {
           hideActionSheet();
+          toggleDeleteModal('deleteCategory');
+          setSelectedCategory(category);
         },
       },
     ]);
@@ -143,6 +379,26 @@ const Wallet = ({tabChange}: any) => {
         icon: 'pencil',
         action: () => {
           hideActionSheet();
+          setEditModal('editTxns');
+          setSelectedTransaction(transaction);
+
+          if (transaction.type === 'income') {
+            setIncomeForm({
+              amount: transaction.amount.toString(),
+              date: new Date(transaction.date),
+              description: transaction.description,
+              category: transaction.category || '',
+            });
+            setIncomeCategory(transaction.category);
+          } else {
+            setExpenseForm({
+              amount: transaction.amount.toString(),
+              date: new Date(transaction.date),
+              description: transaction.description,
+              category: transaction.category || '',
+            });
+            setExpenseCategory(transaction.category);
+          }
         },
       },
       {
@@ -150,6 +406,8 @@ const Wallet = ({tabChange}: any) => {
         icon: 'trash-can',
         action: () => {
           hideActionSheet();
+          setDeleteModal('deleteTxns');
+          setSelectedTransaction(transaction);
         },
       },
     ]);
@@ -280,8 +538,8 @@ const Wallet = ({tabChange}: any) => {
 
       await db.transaction(async tx => {
         await tx.executeSql(
-          `INSERT INTO categories (type, name, budget, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [type, name, budget, localPath, todayDate, todayDate],
+          `INSERT INTO categories (type, name, budget, image, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [type, name, budget, localPath, 'Y', todayDate, todayDate],
         );
       });
 
@@ -329,12 +587,22 @@ const Wallet = ({tabChange}: any) => {
 
     // Add transaction to the database
     const db = await openDatabase();
-    const createdDate = date.toISOString().split('T')[0];
+    const addDate = date.toISOString().split('T')[0];
+    const createdDate = new Date().toISOString().split('T')[0];
     try {
       await db.transaction(async tx => {
         await tx.executeSql(
-          `INSERT INTO transactions (amount, categoryType, category, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-          [amount, type, category, description, createdDate, createdDate],
+          `INSERT INTO transactions (amount, categoryType, category, description, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            amount,
+            type,
+            category,
+            description,
+            'Y',
+            addDate,
+            createdDate,
+            createdDate,
+          ],
         );
       });
 
@@ -1147,6 +1415,308 @@ const Wallet = ({tabChange}: any) => {
         </TouchableOpacity>
       </Modal>
 
+      {/* Category Edit Modal */}
+      <Modal
+        visible={editModal === 'editCategory'}
+        transparent
+        animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => {
+            setEditModal('');
+            setSelectedCategory(null);
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Edit Category</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditModal('');
+                  setSelectedCategory(null);
+                }}
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Body */}
+            <View style={styles.modalBody}>
+              <View
+                style={{
+                  height: 50,
+                  width: '100%',
+                  borderWidth: 0.8,
+                  borderColor: '#000',
+                  borderRadius: 10,
+                }}>
+                <DropDownPicker
+                  open={categoryMenuVisible}
+                  setOpen={setCategoryMenuVisible}
+                  value={categoryForm.type}
+                  setValue={callback => {
+                    const value =
+                      typeof callback === 'function'
+                        ? callback(null)
+                        : callback;
+                    handleCategoryFormChange('type', value);
+                  }}
+                  items={[
+                    {label: 'Income', value: 'Income'},
+                    {label: 'Expense', value: 'Expense'},
+                  ]}
+                  placeholder="Select Category Type"
+                  style={{
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    borderRadius: 10,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: '#ccc',
+                    borderRadius: 10,
+                    width: '95%',
+                    alignSelf: 'center',
+                  }}
+                  placeholderStyle={{
+                    color: '#666',
+                    fontSize: 12,
+                  }}
+                  selectedItemLabelStyle={{
+                    fontWeight: 'bold',
+                    color: '#1F615C',
+                  }}
+                  listItemLabelStyle={{
+                    color: '#000',
+                  }}
+                />
+              </View>
+
+              {/* Category Name Input */}
+              <TextInput
+                placeholder="Category Name"
+                value={categoryForm.name}
+                placeholderTextColor="gray"
+                onChangeText={text => handleCategoryFormChange('name', text)}
+                style={styles.inputField}
+              />
+
+              {/* Add Image Button */}
+              <TouchableOpacity
+                style={styles.addImgBtn}
+                onPress={() => pickImage()}>
+                {categoryForm.image ? (
+                  <Text style={styles.addImgBtnText} numberOfLines={1}>
+                    {categoryForm.image.split('/').pop()}
+                  </Text>
+                ) : (
+                  <View style={styles.addImgBtnContent}>
+                    <Image
+                      source={require('../assets/camera.png')}
+                      style={styles.addImgIcon}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.addImgBtnText}>
+                      Add Image (Optional)
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Add Expanse CategoryBudget */}
+              {categoryForm.type === 'Expense' && (
+                <TextInput
+                  placeholder="Set Budget (Optional)"
+                  value={categoryForm.budget}
+                  placeholderTextColor="gray"
+                  onChangeText={text =>
+                    handleCategoryFormChange('budget', text)
+                  }
+                  style={styles.inputField}
+                />
+              )}
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleUpdateCategory()}>
+                <Text style={styles.saveBtnText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Transaction Edit Modal */}
+      <Modal
+        visible={editModal === 'editTxns'}
+        transparent
+        animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => {
+            setEditModal('');
+            setSelectedTransaction(null);
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Edit Transaction</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditModal('');
+                  setSelectedTransaction(null);
+                }}
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              {/* Category Selection */}
+              <View style={styles.categoryField}>
+                <DropDownPicker
+                  open={menuVisible}
+                  setOpen={setMenuVisible}
+                  value={
+                    selectedTransaction?.type === 'income'
+                      ? incomeCategory // Use form state instead of selectedTransaction
+                      : expenseCategory
+                  }
+                  setValue={callback => {
+                    if (selectedTransaction?.type === 'income') {
+                      setIncomeCategory(callback);
+                    } else {
+                      setExpenseCategory(callback);
+                    }
+                  }}
+                  items={
+                    selectedTransaction?.type === 'income'
+                      ? incomeCategories.map(category => ({
+                          label: category.name,
+                          value: category.name,
+                        }))
+                      : expenseCategories.map(category => ({
+                          label: category.name,
+                          value: category.name,
+                        }))
+                  }
+                  placeholder="Select Category"
+                  style={{
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent',
+                    borderRadius: 10,
+                  }}
+                  dropDownContainerStyle={{
+                    borderColor: '#ccc',
+                    borderRadius: 10,
+                    width: '100%',
+                    alignSelf: 'center',
+                  }}
+                  placeholderStyle={{
+                    color: '#666',
+                    fontSize: 16,
+                  }}
+                  selectedItemLabelStyle={{
+                    fontWeight: 'bold',
+                    color: '#1F615C',
+                  }}
+                  listItemLabelStyle={{
+                    color: '#000',
+                  }}
+                />
+              </View>
+
+              {/* Amount Input */}
+              <TextInput
+                placeholder="Amount"
+                keyboardType="numeric"
+                value={
+                  selectedTransaction?.type === 'income'
+                    ? incomeForm.amount
+                    : expenseForm.amount
+                }
+                placeholderTextColor="gray"
+                onChangeText={text =>
+                  selectedTransaction?.type === 'income'
+                    ? handleIncomeFormChange('amount', text)
+                    : handleExpenseFormChange('amount', text)
+                }
+                style={styles.inputField}
+              />
+
+              {/* Date Picker */}
+              <TouchableOpacity
+                onPress={() =>
+                  selectedTransaction?.type === 'income'
+                    ? setDatePickerVisible(true)
+                    : setExpenseDatePickerVisible(true)
+                }
+                style={styles.categoryField}>
+                <Text style={{color: '#000'}}>
+                  {selectedTransaction?.type === 'income'
+                    ? incomeForm.date
+                      ? incomeForm.date.toLocaleDateString()
+                      : 'Select Date'
+                    : expenseForm.date
+                    ? expenseForm.date.toLocaleDateString()
+                    : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              {selectedTransaction?.type === 'income' && datePickerVisible && (
+                <DateTimePicker
+                  value={incomeForm.date || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setDatePickerVisible(false);
+                    if (event.type === 'set' && selectedDate) {
+                      handleIncomeFormChange('date', selectedDate);
+                    }
+                  }}
+                />
+              )}
+              {selectedTransaction?.type === 'expense' &&
+                expenseDatePickerVisible && (
+                  <DateTimePicker
+                    value={expenseForm.date || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setExpenseDatePickerVisible(false);
+                      if (event.type === 'set' && selectedDate) {
+                        handleExpenseFormChange('date', selectedDate);
+                      }
+                    }}
+                  />
+                )}
+
+              {/* Description Input */}
+              <TextInput
+                placeholder="Description"
+                value={
+                  selectedTransaction?.type === 'income'
+                    ? incomeForm.description
+                    : expenseForm.description
+                }
+                placeholderTextColor="gray"
+                onChangeText={text =>
+                  selectedTransaction?.type === 'income'
+                    ? handleIncomeFormChange('description', text)
+                    : handleExpenseFormChange('description', text)
+                }
+                style={styles.inputField}
+              />
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  handleUpdateTxns();
+                }}>
+                <Text style={styles.saveBtnText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Transaction & Category Details Modal */}
       <Portal>
         <Dialog
@@ -1407,6 +1977,117 @@ const Wallet = ({tabChange}: any) => {
               </TouchableOpacity>
             </View>
           </Dialog.Content>
+        </Dialog>
+
+        {/* Category Delete Modal */}
+        <Dialog
+          visible={deleteModal === 'deleteCategory'}
+          onDismiss={() => setDeleteModal('')}
+          style={{backgroundColor: '#fff'}}>
+          <Dialog.Icon
+            icon={() => (
+              <Icon
+                name="delete-alert"
+                size={40}
+                color="#fff"
+                style={{
+                  backgroundColor: '#ff4444',
+                  borderRadius: 40,
+                  padding: 10,
+                }}
+              />
+            )}
+          />
+          <Dialog.Title
+            style={{textAlign: 'center', color: '#000', fontWeight: 'bold'}}>
+            Delete Category?
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text
+              style={{textAlign: 'center', fontSize: 16, fontWeight: '500'}}>
+              {transactions.filter(
+                transaction => transaction.category === selectedCategory?.name,
+              ).length > 0
+                ? 'This category cannot be deleted as it has associated transactions.'
+                : 'This category has no associated transactions.'}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions style={{justifyContent: 'space-around'}}>
+            <Button
+              mode="text"
+              textColor="#000"
+              labelStyle={{fontWeight: 'bold'}}
+              onPress={() => setDeleteModal('')}
+              style={{marginHorizontal: 10}}>
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              buttonColor="#ff4444"
+              textColor="#fff"
+              labelStyle={{fontWeight: 'bold'}}
+              onPress={() => deleteCategory()}
+              disabled={
+                transactions.filter(
+                  transaction =>
+                    transaction.category === selectedCategory?.name,
+                ).length > 0
+              }
+              style={{marginHorizontal: 10, width: 100}}>
+              Delete
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Transaction Delete Modal */}
+        <Dialog
+          visible={deleteModal === 'deleteTxns'}
+          onDismiss={() => setDeleteModal('')}
+          style={{backgroundColor: '#fff'}}>
+          <Dialog.Icon
+            icon={() => (
+              <Icon
+                name="delete-alert"
+                size={40}
+                color="#fff"
+                style={{
+                  backgroundColor: '#ff4444',
+                  borderRadius: 40,
+                  padding: 10,
+                }}
+              />
+            )}
+          />
+          <Dialog.Title
+            style={{textAlign: 'center', color: '#000', fontWeight: 'bold'}}>
+            Delete Transaction?
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text
+              style={{textAlign: 'center', fontSize: 16, fontWeight: '500'}}>
+              Are you sure you want to delete this transaction? This action
+              cannot be undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions style={{justifyContent: 'space-around'}}>
+            <Button
+              mode="text"
+              textColor="#000"
+              labelStyle={{fontWeight: 'bold'}}
+              onPress={() => setDeleteModal('')}
+              style={{marginHorizontal: 10}}>
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              buttonColor="#ff4444"
+              textColor="#fff"
+              labelStyle={{fontWeight: 'bold'}}
+              onPress={() => deleteTransaction()}
+              style={{marginHorizontal: 10, width: 100}}>
+              Delete
+            </Button>
+          </Dialog.Actions>
         </Dialog>
       </Portal>
     </View>
@@ -1705,8 +2386,8 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: 20,
     backgroundColor: '#1F615C',
-    height: 45,
-    width: '30%',
+    height: 40,
+    width: '27%',
     alignSelf: 'center',
     justifyContent: 'center',
     borderRadius: 10,

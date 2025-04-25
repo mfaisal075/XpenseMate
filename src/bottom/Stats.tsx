@@ -336,18 +336,6 @@ const Stats = ({tabChange}: any) => {
 
       {/* Bottom Container */}
       <ScrollView>
-        <View style={styles.budgetCard}>
-          <Text style={styles.budgetHeading}>Budget Overview</Text>
-          <Text style={styles.budgetText}>Total Income: Rs. 60,000</Text>
-          <Text style={styles.budgetText}>Total Expense: Rs. 35,000</Text>
-          <Text style={styles.budgetText}>Savings: Rs. 25,000</Text>
-
-          <TouchableOpacity style={styles.budgetButton}>
-            <Text style={styles.budgetButtonText}>
-              This Month's Budget: Rs. 70,000
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.bottomContainer}>
           <View style={[styles.chartContainer]}>

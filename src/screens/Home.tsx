@@ -14,6 +14,7 @@ import {signOut} from 'firebase/auth';
 import Setting from '../bottom/Setting';
 import PrivacyPolicy from '../bottom/PrivacyPolicy';
 import ContactUs from '../bottom/ContactUs';
+import AllTxns from '../bottom/AllTxns';
 
 const Home = ({navigation}: any) => {
   const [selectedTab, setSelectedTab] = useState('Main');
@@ -38,6 +39,9 @@ const Home = ({navigation}: any) => {
   };
   const goToProfile = () => {
     setSelectedTab('Profile');
+  };
+  const goToAllTxns = () => {
+    setSelectedTab('AllTxns');
   };
 
   const goToNotification = () => {
@@ -91,7 +95,12 @@ const Home = ({navigation}: any) => {
   return (
     <View style={styles.mainContainer}>
       {selectedTab === 'Main' ? (
-        <Main navigateToNotification={() => goToNotification()} />
+        <Main
+          navigateToNotification={() => goToNotification()}
+          goToAllTxns={() => goToAllTxns()}
+        />
+      ) : selectedTab === 'AllTxns' ? (
+        <AllTxns tabChange={() => changeTab()} />
       ) : selectedTab === 'Stats' ? (
         <Stats tabChange={() => changeTab()} />
       ) : selectedTab === 'Wallet' ? (
@@ -131,7 +140,8 @@ const Home = ({navigation}: any) => {
       selectedTab === 'LoginSecurity' ||
       selectedTab === 'Setting' ||
       selectedTab === 'PrivacyPolicy' ||
-      selectedTab === 'ContactUs' ? null : (
+      selectedTab === 'ContactUs' ||
+      selectedTab === 'AllTxns' ? null : (
         <View style={styles.barContainer}>
           <TouchableOpacity
             style={styles.btnContainer}

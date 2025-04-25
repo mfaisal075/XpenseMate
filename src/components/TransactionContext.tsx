@@ -165,11 +165,14 @@ export const TransactionProvider = ({
             t.categoryType AS type, 
             t.category, 
             t.description, 
-            t.created_at AS date,
+            t.date AS date,
+            t.status AS status,
+            t.created_at AS created_at,
             t.updated_at AS updated_at, 
             c.image AS categoryImage 
           FROM transactions t
           LEFT JOIN categories c ON t.category = c.name
+          WHERE t.status = 'Y'
           ORDER BY t.id DESC`,
           [],
           (_, results) => {
@@ -192,7 +195,7 @@ export const TransactionProvider = ({
       const db = await openDatabase();
       db.transaction(tx => {
         tx.executeSql(
-          `SELECT * FROM categories ORDER BY id DESC`,
+          `SELECT * FROM categories WHERE status = 'Y' ORDER BY id DESC`,
           [],
           (_, results) => {
             const allCategories: Categories[] = [];

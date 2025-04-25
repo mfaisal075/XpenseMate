@@ -17,13 +17,14 @@ import {Transaction} from '../components/Interface';
 import {Dialog, Portal} from 'react-native-paper';
 import {useCurrency} from '../components/CurrencyContext';
 
-const Main = ({navigateToNotification}: any) => {
+const Main = ({navigateToNotification, goToAllTxns}: any) => {
   const [name, setName] = useState('');
   const {transactions, fetchTransactions} = useTransactionContext();
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const {getCurrencySymbol} = useCurrency();
+  const [budgetModalVisible, setBudgetModalVisible] = useState(false);
 
   const openDetailsModal = ({transaction}: any) => {
     setDetailsVisible(true);
@@ -71,23 +72,38 @@ const Main = ({navigateToNotification}: any) => {
     fetchTransactions();
   }, []);
 
-  const totalIncome = transactions.reduce((acc, transaction) => {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+
+  const filteredTransactions = transactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date);
+    return (
+      transactionDate.getMonth() === currentMonth &&
+      transactionDate.getFullYear() === currentYear
+    );
+  });
+
+  const totalIncome = filteredTransactions.reduce((acc, transaction) => {
     return transaction.type === 'income' ? acc + transaction.amount : acc;
   }, 0);
+
+  const totalExpense = filteredTransactions.reduce((acc, transaction) => {
+    return transaction.type === 'expense' ? acc + transaction.amount : acc;
+  }, 0);
+
+  const totalBalance = totalIncome - totalExpense;
+
   const formattedIncome = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(totalIncome);
 
-  const totalExpense = transactions.reduce((acc, transaction) => {
-    return transaction.type === 'expense' ? acc + transaction.amount : acc;
-  }, 0);
   const formattedExpense = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(totalExpense);
 
-  const totalBalance = totalIncome - totalExpense;
   const formattedBalance = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -193,14 +209,24 @@ const Main = ({navigateToNotification}: any) => {
           </View>
 
           <View style={styles.heroInnerSec}>
-            <TouchableOpacity style={styles.threeDotMenuBtn}>
+            <TouchableOpacity
+              style={styles.threeDotMenuBtn}
+              onPress={() => setBudgetModalVisible(true)}>
               <Image
                 source={require('../assets/three-dot-menu.png')}
                 style={styles.threeDotMenu}
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <Text style={styles.heroInnerSecText}>Current Balance</Text>
+            <Text style={styles.heroInnerSecText}>
+              Current Balance -{' '}
+              <Text style={{fontSize: 12, opacity: 0.8}}>
+                {currentDate.toLocaleString('default', {
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </Text>
+            </Text>
             <Text style={styles.heroInnerSecBal}>
               {getCurrencySymbol()} {formattedBalance}/-
             </Text>
@@ -268,15 +294,15 @@ const Main = ({navigateToNotification}: any) => {
         <View style={styles.bottomConatiner}>
           <View style={styles.bottomHeadingContainer}>
             <Text style={styles.headingText}>Transaction History</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => goToAllTxns()}>
               <Text style={styles.seeAllBtn}>See all</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.incmExpnsHistory}>
-            {transactions.length > 0 ? (
+            {filteredTransactions.length > 0 ? (
               <View style={styles.txnContainer}>
                 <FlatList
-                  data={transactions}
+                  data={filteredTransactions}
                   keyExtractor={item => `${item.type}-${item.id}`}
                   renderItem={renderItem}
                   contentContainerStyle={styles.list}
@@ -358,6 +384,93 @@ const Main = ({navigateToNotification}: any) => {
           <Dialog.Actions style={styles.dialogActions}>
             <TouchableOpacity
               onPress={() => closeDetailsModal()}
+              style={styles.closeBtn}>
+              <Text style={styles.closebtnTxt}>Close</Text>
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Budget Modal */}
+        <Dialog
+          visible={budgetModalVisible}
+          onDismiss={() => setBudgetModalVisible(false)}
+          style={styles.detailsModal}>
+          <Dialog.Title style={styles.detailsHeading}>
+            Budget Overview -{' '}
+            {currentDate.toLocaleString('default', {month: 'long'})}
+          </Dialog.Title>
+          <Dialog.Content style={styles.detailsModalBody}>
+            {/* Balance Section */}
+            <View style={styles.budgetSection}>
+              <Text style={styles.budgetLabel}>Current Balance:</Text>
+              <Text style={styles.budgetValue}>
+                {getCurrencySymbol()} {formattedBalance}/-
+              </Text>
+            </View>
+
+            {/* Income vs Expense Section */}
+            <View style={styles.budgetProgressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressIncome,
+                    {
+                      width: `${
+                        (totalIncome / (totalIncome + totalExpense)) * 100 || 0
+                      }%`,
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.progressExpense,
+                    {
+                      width: `${
+                        (totalExpense / (totalIncome + totalExpense)) * 100 || 0
+                      }%`,
+                    },
+                  ]}
+                />
+              </View>
+              <View style={styles.budgetLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendColor, styles.incomeColor]} />
+                  <Text style={styles.legendText}>Income</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendColor, styles.expenseColor]} />
+                  <Text style={styles.legendText}>Expense</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Detailed Numbers */}
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetSubLabel}>Total Income:</Text>
+              <Text style={[styles.budgetSubValue, {color: '#1F8A70'}]}>
+                {getCurrencySymbol()} {formattedIncome}/-
+              </Text>
+            </View>
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetSubLabel}>Total Expenses:</Text>
+              <Text style={[styles.budgetSubValue, {color: '#D9534F'}]}>
+                {getCurrencySymbol()} {formattedExpense}/-
+              </Text>
+            </View>
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetSubLabel}>Net Savings:</Text>
+              <Text style={styles.budgetSubValue}>
+                {getCurrencySymbol()}{' '}
+                {new Intl.NumberFormat('en-US').format(
+                  totalBalance - totalExpense,
+                )}
+                /-
+              </Text>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <TouchableOpacity
+              onPress={() => setBudgetModalVisible(false)}
               style={styles.closeBtn}>
               <Text style={styles.closebtnTxt}>Close</Text>
             </TouchableOpacity>
@@ -660,5 +773,85 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 12,
     textAlign: 'center',
+  },
+
+  // Budget Modal Styles
+  budgetSection: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  budgetLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#444',
+  },
+  budgetValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1B5C58',
+    marginTop: 5,
+  },
+  budgetProgressContainer: {
+    marginVertical: 15,
+  },
+  progressBar: {
+    height: 10,
+    backgroundColor: '#eee',
+    borderRadius: 5,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  progressIncome: {
+    backgroundColor: '#1F8A70',
+  },
+  progressExpense: {
+    backgroundColor: '#D9534F',
+  },
+  budgetLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 5,
+  },
+  incomeColor: {
+    backgroundColor: '#1F8A70',
+  },
+  expenseColor: {
+    backgroundColor: '#D9534F',
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  budgetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 8,
+    paddingHorizontal: 10,
+  },
+  budgetSubLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  budgetSubValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+  },
+  monthText: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.8,
+    marginLeft: 20,
+    marginTop: 5,
   },
 });

@@ -26,6 +26,8 @@ const initTransactionsTable = async () => {
                     categoryType TEXT NOT NULL,
                     category TEXT NOT NULL,
                     description TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    date TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                     )`
@@ -49,6 +51,7 @@ const initCategoriesTable = async () => {
                     budget TEXT,
                     description TEXT,
                     image TEXT,
+                    status TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                     )`

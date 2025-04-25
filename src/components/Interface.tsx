@@ -7,6 +7,7 @@ export interface Categories {
   image: string;
   created_at: string;
   updated_at: string;
+  status: string;
 }
 
 export interface Transaction {
@@ -18,4 +19,6 @@ export interface Transaction {
   type: string;
   created_at?: string;
   updated_at?: string;
+  categoryImage?: string;
+  status?: string;
 }
