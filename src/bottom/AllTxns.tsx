@@ -150,7 +150,7 @@ const AllTxns = ({tabChange}: any) => {
                 value={selectedMonth}
                 setValue={setSelectedMonth}
                 items={months}
-                listMode="SCROLLVIEW"
+                listMode="MODAL"
                 scrollViewProps={{
                   nestedScrollEnabled: true,
                 }}
@@ -184,23 +184,30 @@ const AllTxns = ({tabChange}: any) => {
                 ]}
                 placeholder="Filter by Type"
                 textStyle={styles.dropdownText}
+                listMode="MODAL"
               />
             </View>
           </View>
         </View>
 
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 30,
+            paddingHorizontal: 10,
+          }}>
+          <Text style={styles.headingText}>Transactions</Text>
+        </View>
         <FlatList
-          style={{marginTop: 30}}
+          style={{marginTop: 15}}
           data={filteredTransactions}
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No transactions found</Text>
           }
-          contentContainerStyle={[
-            styles.listContent,
-            {marginTop: openMonth || openType ? 160 : 0},
-          ]}
+          contentContainerStyle={[styles.listContent]}
         />
       </View>
     </View>
@@ -262,7 +269,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   filterSection: {
-    marginBottom: 60,
+    marginBottom: 30,
   },
   searchInput: {
     backgroundColor: '#FFFFFF',
@@ -343,6 +350,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+  },
+  headingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

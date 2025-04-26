@@ -8,20 +8,25 @@ import {
   View,
 } from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
-import {LineChart, PieChart, BarChart} from 'react-native-chart-kit';
+import {LineChart, PieChart} from 'react-native-chart-kit';
 import {Dimensions} from 'react-native';
 import {useTransactionContext} from '../components/TransactionContext';
 import {Transaction} from '../components/Interface';
 import Toast from 'react-native-toast-message';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import {Alert} from 'react-native';
+import {ProgressBar} from 'react-native-paper';
+import {useCurrency} from '../components/CurrencyContext';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Stats = ({tabChange}: any) => {
-  const {transactions, fetchTransactions} = useTransactionContext();
+  const {transactions, fetchTransactions, categories} = useTransactionContext();
   const [selectedTab, setSelectedTab] = useState('Weakly');
   const [weeklyData, setWeeklyData] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<Transaction[]>([]);
   const [yearlyData, setYearlyData] = useState<Transaction[]>([]);
+  const [selectedContainer, setSelectedContainer] = useState('Summary');
+  const {getCurrencySymbol} = useCurrency();
 
   const memoizedFetchTransactions = useCallback(() => {
     fetchTransactions();
@@ -264,8 +269,13 @@ const Stats = ({tabChange}: any) => {
   const getPieChartData = () => {
     const categoryAmounts: {[key: string]: number} = {};
 
+    const currentMonth = new Date().getMonth();
     transactions.forEach(item => {
-      if (item.type === 'expense') {
+      const transactionDate = new Date(item.date);
+      if (
+        item.type === 'expense' &&
+        transactionDate.getMonth() === currentMonth
+      ) {
         if (!categoryAmounts[item.category]) {
           categoryAmounts[item.category] = 0;
         }
@@ -297,6 +307,13 @@ const Stats = ({tabChange}: any) => {
     }));
 
     return pieData;
+  };
+
+  const getProgressColor = (percentage: number, hasBudget: boolean) => {
+    if (!hasBudget) return '#7f8c8d'; // Grayish color for "No Budget"
+    if (percentage < 70) return 'green';
+    if (percentage >= 70 && percentage <= 100) return 'orange';
+    return 'red';
   };
 
   return (
@@ -334,155 +351,279 @@ const Stats = ({tabChange}: any) => {
         </View>
       </View>
 
-      {/* Bottom Container */}
-      <ScrollView>
+      <View style={styles.toggleContainer}>
+        <View style={styles.toggleButton}>
+          <TouchableOpacity
+            style={
+              selectedContainer === 'Summary'
+                ? styles.buttonContainer
+                : {...styles.buttonContainer, backgroundColor: 'gray'}
+            }
+            onPress={() => setSelectedContainer('Summary')}>
+            <Text
+              style={
+                selectedContainer === 'Summary'
+                  ? styles.buttonText
+                  : {...styles.buttonText, color: 'white'}
+              }>
+              Category Budget Summary
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={
+              selectedContainer === 'Spending'
+                ? styles.buttonContainer
+                : {...styles.buttonContainer, backgroundColor: 'gray'}
+            }
+            onPress={() => setSelectedContainer('Spending')}>
+            <Text
+              style={
+                selectedContainer === 'Spending'
+                  ? styles.buttonText
+                  : {...styles.buttonText, color: 'white'}
+              }>
+              Spending Insights
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-        <View style={styles.bottomContainer}>
-          <View style={[styles.chartContainer]}>
-            <View style={styles.chartTopBar}>
-              <TouchableOpacity
-                style={
-                  selectedTab === 'Weakly'
-                    ? styles.chartBtn
-                    : {
-                        width: 100,
-                        height: '100%',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'transparent',
-                      }
-                }
-                onPress={() => setSelectedTab('Weakly')}>
-                <Text
+      {/* Bottom Container */}
+      {selectedContainer === 'Summary' && (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.bottomContainer}>
+            <View style={styles.summaryCard}>
+              <View style={styles.cardHeader}>
+                <MaterialIcons name="insert-chart" size={24} color="#6366f1" />
+                <View style={styles.headerTextContainer}>
+                  <Text style={styles.cardTitle}>Spending Summary</Text>
+                  <Text style={styles.monthText}>
+                    {new Date().toLocaleString('default', {
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+              </View>
+
+              {categories
+                .filter(category => category.type.toLowerCase() === 'expense')
+                .map(category => {
+                  const currentMonth = new Date().getMonth();
+                  const totalSpent = transactions
+                    .filter(
+                      tx =>
+                        tx.category === category.name &&
+                        tx.type.toLowerCase() === 'expense' &&
+                        new Date(tx.date).getMonth() === currentMonth,
+                    )
+                    .reduce((total, tx) => total + tx.amount, 0);
+
+                  const hasBudget =
+                    category.budget !== null && category.budget !== undefined;
+                  const budget = parseFloat(category.budget) || 0;
+                  const percentage =
+                    hasBudget && budget > 0 ? (totalSpent / budget) * 100 : 0;
+                  const color = getProgressColor(percentage, hasBudget);
+
+                  return (
+                    <View key={category.id} style={styles.categoryItem}>
+                      <View style={styles.categoryHeader}>
+                        <Text style={styles.categoryName}>{category.name}</Text>
+                        <View style={styles.amountWrapper}>
+                          {hasBudget ? (
+                            <>
+                              <Text style={[styles.spentAmount, {color}]}>
+                                {getCurrencySymbol()}
+                                {totalSpent.toFixed(1)}
+                              </Text>
+                              <Text style={styles.budgetAmount}>
+                                / {getCurrencySymbol()}
+                                {budget.toFixed(1)}
+                              </Text>
+                            </>
+                          ) : (
+                            <Text style={styles.noBudgetLabel}>
+                              No Budget Set
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.progressWrapper}>
+                        <View
+                          style={[
+                            styles.progressBarBackground,
+                            hasBudget && {backgroundColor: `${color}20`},
+                          ]}>
+                          <ProgressBar
+                            indeterminate={false}
+                            progress={Math.min(percentage, 100) / 100}
+                            color={color}
+                            style={styles.progressBar}
+                          />
+                        </View>
+                        <Text style={[styles.percentageLabel, {color}]}>
+                          {hasBudget ? `${Math.round(percentage)}%` : '—'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+            </View>
+          </View>
+        </ScrollView>
+      )}
+      {selectedContainer === 'Spending' && (
+        <ScrollView>
+          <View style={styles.bottomContainer}>
+            <View style={styles.historySec}>
+              <View style={styles.historySecTopBar}>
+                <Text style={styles.chartHeading}>Expense Overview</Text>
+              </View>
+
+              {/* Pie Chart */}
+              <View style={styles.pieChart}>
+                <PieChart
+                  data={getPieChartData()}
+                  width={Dimensions.get('window').width - 30} // Adjusted width to add padding
+                  height={getPieChartData().length > 7 ? 160 : 180} // Conditional height based on categories
+                  chartConfig={{
+                    backgroundColor: '#f5f5f5',
+                    backgroundGradientFrom: '#FFFFFF',
+                    backgroundGradientTo: '#FFFFFF',
+                    color: (opacity = 1) => `rgba(80, 200, 120, ${opacity})`, // Emerald green for labels
+                    labelColor: (opacity = 1) => `rgba(60, 60, 60, ${opacity})`, // Darker gray for labels
+                  }}
+                  accessor="amount"
+                  backgroundColor="transparent"
+                  paddingLeft="-10" // Removed padding for better alignment
+                  absolute
+                  avoidFalseZero
+                  hasLegend={false} // Disable default legend
+                />
+                <View style={styles.customLegend}>
+                  {getPieChartData().map((item, index) => (
+                    <View key={index} style={styles.legendItem}>
+                      <View
+                        style={[
+                          styles.legendColor,
+                          {backgroundColor: item.color},
+                        ]}
+                      />
+                      <Text style={styles.legendText}>{item.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* Line Chart */}
+            <View style={[styles.chartContainer]}>
+              <View style={styles.chartTopBar}>
+                <TouchableOpacity
                   style={
                     selectedTab === 'Weakly'
-                      ? styles.chartBtnTxt
-                      : {color: '#000', fontWeight: 'bold'}
-                  }>
-                  Weekly
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={
-                  selectedTab === 'Monthly'
-                    ? styles.chartBtn
-                    : {
-                        width: 100,
-                        height: '100%',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'transparent',
-                      }
-                }
-                onPress={() => setSelectedTab('Monthly')}>
-                <Text
+                      ? styles.chartBtn
+                      : {
+                          width: 100,
+                          height: '100%',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'transparent',
+                        }
+                  }
+                  onPress={() => setSelectedTab('Weakly')}>
+                  <Text
+                    style={
+                      selectedTab === 'Weakly'
+                        ? styles.chartBtnTxt
+                        : {color: '#000', fontWeight: 'bold'}
+                    }>
+                    Weekly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={
                     selectedTab === 'Monthly'
-                      ? styles.chartBtnTxt
-                      : {color: '#000', fontWeight: 'bold'}
-                  }>
-                  Monthly
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={
-                  selectedTab === 'Yearly'
-                    ? styles.chartBtn
-                    : {
-                        width: 100,
-                        height: '100%',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'transparent',
-                      }
-                }
-                onPress={() => setSelectedTab('Yearly')}>
-                <Text
+                      ? styles.chartBtn
+                      : {
+                          width: 100,
+                          height: '100%',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'transparent',
+                        }
+                  }
+                  onPress={() => setSelectedTab('Monthly')}>
+                  <Text
+                    style={
+                      selectedTab === 'Monthly'
+                        ? styles.chartBtnTxt
+                        : {color: '#000', fontWeight: 'bold'}
+                    }>
+                    Monthly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={
                     selectedTab === 'Yearly'
-                      ? styles.chartBtnTxt
-                      : {color: '#000', fontWeight: 'bold'}
-                  }>
-                  Yearly
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.chart}>
-              <View
-                style={{borderRadius: 20, overflow: 'hidden', elevation: 5}}>
-                <LineChart
-                  data={
-                    selectedTab === 'Weakly'
-                      ? getWeeklyData()
-                      : selectedTab === 'Monthly'
-                      ? getMonthlyData()
-                      : getYearlyData()
+                      ? styles.chartBtn
+                      : {
+                          width: 100,
+                          height: '100%',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'transparent',
+                        }
                   }
-                  width={Dimensions.get('window').width - 30}
-                  height={210}
-                  chartConfig={{
-                    backgroundColor: 'transparent',
-                    backgroundGradientFrom: '#438883',
-                    backgroundGradientTo: '#438883',
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                    labelColor: (opacity = 1) =>
-                      `rgba(255, 255, 255, ${opacity})`,
-                    style: {borderRadius: 16},
-                    propsForDots: {
-                      r: '6',
-                      strokeWidth: '2',
-                      stroke: '#438883',
-                    },
-                  }}
-                  bezier
-                />
+                  onPress={() => setSelectedTab('Yearly')}>
+                  <Text
+                    style={
+                      selectedTab === 'Yearly'
+                        ? styles.chartBtnTxt
+                        : {color: '#000', fontWeight: 'bold'}
+                    }>
+                    Yearly
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.chart}>
+                <View
+                  style={{borderRadius: 20, overflow: 'hidden', elevation: 5}}>
+                  <LineChart
+                    data={
+                      selectedTab === 'Weakly'
+                        ? getWeeklyData()
+                        : selectedTab === 'Monthly'
+                        ? getMonthlyData()
+                        : getYearlyData()
+                    }
+                    width={Dimensions.get('window').width - 30}
+                    height={210}
+                    chartConfig={{
+                      backgroundColor: 'transparent',
+                      backgroundGradientFrom: '#438883',
+                      backgroundGradientTo: '#438883',
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      labelColor: (opacity = 1) =>
+                        `rgba(255, 255, 255, ${opacity})`,
+                      style: {borderRadius: 16},
+                      propsForDots: {
+                        r: '6',
+                        strokeWidth: '2',
+                        stroke: '#438883',
+                      },
+                    }}
+                    bezier
+                  />
+                </View>
               </View>
             </View>
           </View>
-
-          <View style={styles.historySec}>
-            <View style={styles.historySecTopBar}>
-              <Text style={styles.chartHeading}>Expense Overview</Text>
-            </View>
-
-            {/* Pie Chart */}
-            <View style={styles.pieChart}>
-              <PieChart
-                data={getPieChartData()}
-                width={Dimensions.get('window').width - 30} // Adjusted width to add padding
-                height={getPieChartData().length > 7 ? 160 : 180} // Conditional height based on categories
-                chartConfig={{
-                  backgroundColor: '#f5f5f5',
-                  backgroundGradientFrom: '#FFFFFF',
-                  backgroundGradientTo: '#FFFFFF',
-                  color: (opacity = 1) => `rgba(80, 200, 120, ${opacity})`, // Emerald green for labels
-                  labelColor: (opacity = 1) => `rgba(60, 60, 60, ${opacity})`, // Darker gray for labels
-                }}
-                accessor="amount"
-                backgroundColor="transparent"
-                paddingLeft="-10" // Removed padding for better alignment
-                absolute
-                avoidFalseZero
-                hasLegend={false} // Disable default legend
-              />
-              <View style={styles.customLegend}>
-                {getPieChartData().map((item, index) => (
-                  <View key={index} style={styles.legendItem}>
-                    <View
-                      style={[
-                        styles.legendColor,
-                        {backgroundColor: item.color},
-                      ]}
-                    />
-                    <Text style={styles.legendText}>{item.name}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -525,6 +666,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 10,
     borderRadius: 10,
+    marginBottom: 65,
   },
   chartTopBar: {
     width: '100%',
@@ -565,7 +707,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 'auto',
     marginBottom: 30,
-    marginTop: 35,
+    marginTop: 10,
   },
   historySecTopBar: {
     width: '100%',
@@ -783,8 +925,138 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   chartHeading: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+
+  // Progress Bar Styles
+  scrollContainer: {
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
+  summaryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+    letterSpacing: -0.4,
+  },
+  categoryItem: {
+    marginVertical: 10,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#334155',
+    maxWidth: '60%',
+  },
+  amountWrapper: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  spentAmount: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  budgetAmount: {
+    fontSize: 11,
+    color: '#64748b',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  noBudgetLabel: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontStyle: 'italic',
+  },
+  progressWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+  },
+  progressBarBackground: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e2e8f0',
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+  },
+  percentageLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 12,
+    minWidth: 42,
+    textAlign: 'right',
+  },
+  headerTextContainer: {
+    marginLeft: 12,
+  },
+  monthText: {
+    fontSize: 14,
+    color: '#64748b',
+    marginTop: 2,
+  },
+
+  // Toggle Container Styles
+  toggleContainer: {
+    width: '100%',
+    height: 80,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  toggleButton: {
+    height: 50,
+    width: '80%',
+    backgroundColor: 'gray',
+    borderRadius: 30,
+    alignSelf: 'center',
+    marginVertical: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  buttonContainer: {
+    width: '50%',
+    height: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
 });

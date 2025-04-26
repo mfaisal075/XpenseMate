@@ -67,6 +67,9 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
     };
 
     BackHandler.addEventListener('hardwareBackPress', backPress);
+    console.log('Income', formattedIncome);
+    console.log('Expanse', formattedExpense);
+    console.log('Balance', formattedBalance);
 
     fetchUserData();
     fetchTransactions();
@@ -85,11 +88,15 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
   });
 
   const totalIncome = filteredTransactions.reduce((acc, transaction) => {
-    return transaction.type === 'income' ? acc + transaction.amount : acc;
+    return transaction.type.toLowerCase() === 'income'
+      ? acc + transaction.amount
+      : acc;
   }, 0);
 
   const totalExpense = filteredTransactions.reduce((acc, transaction) => {
-    return transaction.type === 'expense' ? acc + transaction.amount : acc;
+    return transaction.type.toLowerCase() === 'expense'
+      ? acc + transaction.amount
+      : acc;
   }, 0);
 
   const totalBalance = totalIncome - totalExpense;
@@ -363,7 +370,7 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
                         : '#D9534F',
                   },
                 ]}>
-                Rs.{selectedTransaction?.amount}/-
+                {getCurrencySymbol()} {selectedTransaction?.amount}/-
               </Text>
             </View>
             <View>
@@ -460,10 +467,7 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
             <View style={styles.budgetRow}>
               <Text style={styles.budgetSubLabel}>Net Savings:</Text>
               <Text style={styles.budgetSubValue}>
-                {getCurrencySymbol()}{' '}
-                {new Intl.NumberFormat('en-US').format(
-                  totalBalance - totalExpense,
-                )}
+                {getCurrencySymbol()} {formattedBalance}
                 /-
               </Text>
             </View>
