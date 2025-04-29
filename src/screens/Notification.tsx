@@ -11,13 +11,14 @@ import {
 import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {Modal} from 'react-native';
+import {openDatabase} from '../../database';
 
 type NotificationType = {
   id: string;
   title: string;
   message: string;
   timestamp: Date;
-  read: boolean;
+  readStatus: boolean;
 };
 
 const Notification = ({navigation}: any) => {
@@ -26,34 +27,55 @@ const Notification = ({navigation}: any) => {
     useState<NotificationType | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const fetchNotifications = async () => {
+    const db = await openDatabase();
+    try {
+      const [results] = await db.executeSql(
+        `SELECT id, title, message, timestamp, readStatus 
+         FROM notifications 
+         ORDER BY timestamp DESC`,
+      );
+
+      const items: NotificationType[] = [];
+      for (let i = 0; i < results.rows.length; i++) {
+        const row = results.rows.item(i);
+        items.push({
+          id: row.id.toString(),
+          title: row.title,
+          message: row.message,
+          timestamp: new Date(row.timestamp),
+          readStatus: row.readStatus === 1, // Convert SQLite 0/1 to boolean
+        });
+      }
+      setNotifications(items);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
   useEffect(() => {
-    setNotifications([
-      {
-        id: '1',
-        title: 'New Message',
-        message: 'You have a new message from John',
-        timestamp: new Date(),
-        read: false,
-      },
-      {
-        id: '2',
-        title: 'Payment Received',
-        message: 'Your payment of $200 has been processed',
-        timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-        read: true,
-      },
-    ]);
+    fetchNotifications();
   }, []);
 
-  const handleNotificationPress = (item: NotificationType) => {
-    // Mark as read
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === item.id
-          ? {...notification, read: true}
-          : notification,
-      ),
-    );
+  const handleNotificationPress = async (item: NotificationType) => {
+    if (!item.readStatus) {
+      // Update in database
+      const db = await openDatabase();
+      await db.executeSql(
+        'UPDATE notifications SET readStatus = 1 WHERE id = ?',
+        [item.id],
+      );
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === item.id
+            ? {...notification, readStatus: true}
+            : notification,
+        ),
+      );
+    }
+
     setSelectedNotification(item);
     setModalVisible(true);
   };
@@ -63,18 +85,25 @@ const Notification = ({navigation}: any) => {
       style={styles.notificationItem}
       onPress={() => handleNotificationPress(item)}>
       <View style={styles.notificationContent}>
-        <Text style={styles.notificationTitle}>{item.title}</Text>
+        <Text
+          style={[
+            styles.notificationTitle,
+            !item.readStatus && styles.unreadTitle,
+          ]}>
+          {item.title}
+        </Text>
         <Text style={styles.notificationMessage} numberOfLines={1}>
           {item.message}
         </Text>
         <Text style={styles.notificationTime}>
+          {item.timestamp.toLocaleDateString()} •{' '}
           {item.timestamp.toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           })}
         </Text>
       </View>
-      {!item.read && <View style={styles.unreadIndicator} />}
+      {!item.readStatus && <View style={styles.unreadIndicator} />}
     </TouchableOpacity>
   );
 
@@ -289,5 +318,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'right',
+  },
+  unreadTitle: {
+    color: '#1B5C58',
+    fontWeight: 'bold',
   },
 });

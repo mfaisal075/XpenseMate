@@ -30,6 +30,7 @@ import {useTransactionContext} from '../components/TransactionContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useCurrency} from '../components/CurrencyContext';
 import ActionSheet from '../components/ActionSheet';
+import checkBudgetExceed from '../components/BudgetAlerts';
 
 interface FormState {
   amount: string;
@@ -513,8 +514,31 @@ const Wallet = ({tabChange}: any) => {
     try {
       const {type, name, image, budget} = categoryForm;
 
+      if (budget && !/^\d+(\.\d{1,2})?$/.test(budget)) {
+        Alert.alert('Invalid input', 'Please enter a valid budget amount');
+        return;
+      }
+      const db = await openDatabase();
+
       if (!type || !name) {
         Alert.alert('Error', 'Please fill all the fields');
+        return;
+      }
+
+      // Trim and normalize name for comparison
+      const trimmedName = name.trim();
+
+      // 🔍 Check for duplicate category
+      const [result] = await db.executeSql(
+        `SELECT * FROM categories WHERE LOWER(name) = LOWER(?) AND type = ?`,
+        [trimmedName, type.trim()],
+      );
+
+      if (result.rows.length > 0) {
+        Alert.alert(
+          'Duplicate Category',
+          'A category with the same name already exists.',
+        );
         return;
       }
 
@@ -526,7 +550,7 @@ const Wallet = ({tabChange}: any) => {
       }
 
       // Add category to the database
-      const db = await openDatabase();
+
       const todayDate = new Date().toISOString().split('T')[0];
 
       if (image) {
@@ -539,7 +563,15 @@ const Wallet = ({tabChange}: any) => {
       await db.transaction(async tx => {
         await tx.executeSql(
           `INSERT INTO categories (type, name, budget, image, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [type, name, budget, localPath, 'Y', todayDate, todayDate],
+          [
+            type.trim(),
+            name.trim(),
+            budget,
+            localPath,
+            'Y',
+            todayDate,
+            todayDate,
+          ],
         );
       });
 
@@ -595,8 +627,8 @@ const Wallet = ({tabChange}: any) => {
           `INSERT INTO transactions (amount, categoryType, category, description, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             amount,
-            type,
-            category,
+            type.trim(),
+            category.trim(),
             description,
             'Y',
             addDate,
@@ -605,6 +637,10 @@ const Wallet = ({tabChange}: any) => {
           ],
         );
       });
+
+      if (type === 'expense') {
+        await checkBudgetExceed(category);
+      }
 
       Toast.show({
         type: 'success',
@@ -1067,6 +1103,7 @@ const Wallet = ({tabChange}: any) => {
           onPressOut={() => {
             setModalVisible(false);
             setIncomeForm(initialFormState);
+            setIncomeCategory('');
           }}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
@@ -1075,6 +1112,7 @@ const Wallet = ({tabChange}: any) => {
                 onPress={() => {
                   setModalVisible(false);
                   setIncomeForm(initialFormState);
+                  setIncomeCategory('');
                 }}
                 style={styles.closeButton}>
                 <Icon name="close" size={18} color={'#fff'} />
@@ -1181,6 +1219,7 @@ const Wallet = ({tabChange}: any) => {
           onPressOut={() => {
             setExpenseModalVisible(false);
             setExpenseForm(initialFormState);
+            setExpenseCategory('');
           }}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
@@ -1189,6 +1228,7 @@ const Wallet = ({tabChange}: any) => {
                 onPress={() => {
                   setExpenseModalVisible(false);
                   setExpenseForm(initialFormState);
+                  setExpenseCategory('');
                 }}
                 style={styles.closeButton}>
                 <Icon name="close" size={18} color={'#fff'} />
@@ -1396,6 +1436,7 @@ const Wallet = ({tabChange}: any) => {
               {categoryForm.type === 'Expense' && (
                 <TextInput
                   placeholder="Set Budget (Optional)"
+                  keyboardType="numeric"
                   value={categoryForm.budget}
                   placeholderTextColor="gray"
                   onChangeText={text =>

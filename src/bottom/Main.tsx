@@ -67,9 +67,6 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
     };
 
     BackHandler.addEventListener('hardwareBackPress', backPress);
-    console.log('Income', formattedIncome);
-    console.log('Expanse', formattedExpense);
-    console.log('Balance', formattedBalance);
 
     fetchUserData();
     fetchTransactions();
