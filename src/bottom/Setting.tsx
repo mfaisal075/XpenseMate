@@ -272,7 +272,6 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
                 onPress={() => {
                   // Handle saving budget with month/year
                   if (monthlyBudget && !isNaN(Number(monthlyBudget))) {
-                    
                     setBudgetModalVisible(false);
                   }
                 }}>
@@ -484,10 +483,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   modalButton: {
-    flex: 1,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    width: '40%',
+    height: 40,
+    justifyContent: 'center',
   },
   saveButton: {
     backgroundColor: '#1B5C58',
@@ -498,12 +499,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   saveButtonText: {
+    fontSize: 12,
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   cancelButtonText: {
+    fontSize: 12,
     color: '#1B5C58',
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   monthPickerContainer: {
     backgroundColor: 'white',

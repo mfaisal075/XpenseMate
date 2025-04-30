@@ -1063,6 +1063,7 @@ const Wallet = ({tabChange}: any) => {
                   <Text style={styles.optionText}>Add Income</Text>
                 </View>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.optionButton}
                 onPress={() => expenseModalOpen()}>
@@ -1073,6 +1074,21 @@ const Wallet = ({tabChange}: any) => {
                     resizeMode="contain"
                   />
                   <Text style={styles.optionText}>Add Expense</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {}} // Empty function for no action
+              >
+                <View style={styles.optionContent}>
+                  <Icon
+                    name="wallet"
+                    size={24}
+                    color="#fff"
+                    style={styles.optionIcon}
+                  />
+                  <Text style={styles.optionText}>Opening Balance</Text>
                 </View>
               </TouchableOpacity>
             </View>

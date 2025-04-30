@@ -85,9 +85,29 @@ const initNotificationsTable = async () => {
   }
 };
 
+const initOpeningBalanceTable = async () => {
+  try {
+    const db = await openDatabase();
+    await db.transaction(async tx => {
+      await tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS opening_balance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    amount REAL NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                    )`,
+      );
+    });
+  } catch (error) {
+    console.log('Error creating opening balance table', error);
+    throw error;
+  }
+};
+
 export {
   openDatabase,
   initTransactionsTable,
   initCategoriesTable,
   initNotificationsTable,
+  initOpeningBalanceTable,
 };

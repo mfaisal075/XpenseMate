@@ -12,6 +12,7 @@ import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
 import {createUserWithEmailAndPassword, signOut} from 'firebase/auth';
 import {doc, setDoc} from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
+import {ActivityIndicator} from 'react-native';
 
 const Signup = ({navigation}: any) => {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ const Signup = ({navigation}: any) => {
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userName, setUserName] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
     const auth = FIREBASE_AUTH;
@@ -32,6 +34,8 @@ const Signup = ({navigation}: any) => {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
+
+    setLoading(true);
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -65,6 +69,8 @@ const Signup = ({navigation}: any) => {
         Alert.alert('Error', error.message);
       }
       console.error(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,7 +135,15 @@ const Signup = ({navigation}: any) => {
           />
         </View>
         <TouchableOpacity style={styles.button} onPress={() => handleSignup()}>
-          <Text style={styles.btnText}>Sign up</Text>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#F5F5F5"
+              style={{marginVertical: 10}}
+            />
+          ) : (
+            <Text style={styles.btnText}>Sign up</Text>
+          )}
         </TouchableOpacity>
         <View
           style={{

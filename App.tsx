@@ -6,6 +6,7 @@ import {
   initTransactionsTable,
   initCategoriesTable,
   initNotificationsTable,
+  initOpeningBalanceTable,
 } from './database';
 import Toast from 'react-native-toast-message';
 import {TransactionProvider} from './src/components/TransactionContext';
@@ -56,9 +57,12 @@ const App = () => {
 
     const initializeDatabase = async () => {
       try {
-        await initTransactionsTable();
         await initCategoriesTable();
-        await initNotificationsTable();
+        await Promise.all([
+          initTransactionsTable(),
+          initNotificationsTable(),
+          initOpeningBalanceTable(),
+        ]);
       } catch (error) {
         console.error('Error initializing database:', error);
       }

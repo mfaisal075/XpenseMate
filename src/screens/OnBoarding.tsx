@@ -77,20 +77,20 @@ const styles = StyleSheet.create({
   },
   donut: {
     position: 'absolute',
-    top: 90,
-    left: 50,
-    height: 75,
+    top: '10.5%',
+    left: '12%',
+    height: '9%',
   },
   image: {
-    marginTop: 80,
+    marginTop: '21%',
     width: '80%',
     height: '45%',
   },
   coin: {
     position: 'absolute',
-    top: 130,
-    right: 50,
-    height: 75,
+    top: '16%',
+    right: '12%',
+    height: '9%',
   },
   textContainer: {
     marginTop: 30,

@@ -158,7 +158,7 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
           resizeMode="cover"
         />
         <Text style={styles.userName}>{name}</Text>
-        <Text style={styles.userEmail}>{`@${userName}`}</Text>
+        <Text style={styles.userEmail}>{userName}</Text>
 
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Email</Text>
@@ -216,30 +216,49 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
             <TextInput
               style={styles.input}
               placeholder="Full Name"
+              placeholderTextColor={'gray'}
               value={editName}
               onChangeText={setEditName}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="@username"
-              value={editUsername}
-              onChangeText={text => setEditUsername(text.toLowerCase())}
-            />
+            <View
+              style={[
+                styles.input,
+                {
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  height: 40, // Ensure consistent height
+                  paddingVertical: 0, // Remove extra padding
+                },
+              ]}>
+              <Text style={{color: 'gray', fontWeight: 'bold'}}>@</Text>
+              <TextInput
+                style={{flex: 1, height: '100%'}} // Ensure TextInput fills the height
+                placeholder="username"
+                placeholderTextColor={'gray'}
+                value={editUsername.replace(/^@/, '')}
+                onChangeText={text =>
+                  setEditUsername('@' + text.replace(/@/g, ''))
+                }
+              />
+            </View>
             <TextInput
               style={styles.input}
               placeholder="Email"
+              placeholderTextColor={'gray'}
               value={editEmail}
               onChangeText={setEditEmail}
             />
             <TextInput
               style={styles.input}
               placeholder="Phone"
+              placeholderTextColor={'gray'}
               value={editPhone}
               onChangeText={setEditPhone}
             />
             <TextInput
               style={styles.input}
               placeholder="Address"
+              placeholderTextColor={'gray'}
               value={editAddress}
               onChangeText={setEditAddress}
             />

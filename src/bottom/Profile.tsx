@@ -130,7 +130,7 @@ const Profile = ({
         <View style={styles.nameContainer}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.userName}>
-            {userName ? `@${userName}` : '@username'}
+            {userName ? `${userName}` : '@username'}
           </Text>
         </View>
         <View style={styles.divider} />

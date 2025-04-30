@@ -19,11 +19,13 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
+import {ActivityIndicator} from 'react-native';
 
 const Login = ({navigation}: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const backPress = () => {
@@ -70,6 +72,8 @@ const Login = ({navigation}: any) => {
       Alert.alert('Error', 'Please fill in all the fields');
       return;
     }
+
+    setLoading(true);
     const auth = FIREBASE_AUTH;
 
     try {
@@ -80,14 +84,14 @@ const Login = ({navigation}: any) => {
       );
       const user = userCredential.user;
 
-      // 🔥 Log login to Firestore
-      await logLoginHistory(user);
-
       await updateDoc(doc(FIRESTORE_DB, 'users', user.uid), {
         forceLogout: false,
       });
 
       navigation.replace('Home');
+
+      // 🔥 Log login to Firestore
+      await logLoginHistory(user);
     } catch (error: any) {
       console.error('Login Error:', error.code, error.message);
 
@@ -118,6 +122,8 @@ const Login = ({navigation}: any) => {
           );
           break;
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,6 +131,7 @@ const Login = ({navigation}: any) => {
     <View style={styles.container}>
       <View style={styles.contentContainer}>
         <Text style={styles.headerText}>Login</Text>
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -156,8 +163,20 @@ const Login = ({navigation}: any) => {
             />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.button} onPress={() => handleLogin()}>
-          <Text style={styles.btnText}>Log In</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => handleLogin()}
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color="#F5F5F5"
+              animating={loading}
+              style={{marginVertical: 10}}
+            />
+          ) : (
+            <Text style={styles.btnText}>Log In</Text>
+          )}
         </TouchableOpacity>
 
         {/* Forgot password */}
