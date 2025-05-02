@@ -22,3 +22,11 @@ export interface Transaction {
   categoryImage?: string;
   status?: string;
 }
+
+export interface OpeningBalance {
+  id: number;
+  amount: string;
+  date: string;
+  created_at: string;
+  updated_at: string;
+}

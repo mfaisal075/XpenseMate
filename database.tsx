@@ -92,7 +92,8 @@ const initOpeningBalanceTable = async () => {
       await tx.executeSql(
         `CREATE TABLE IF NOT EXISTS opening_balance (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    amount REAL NOT NULL,
+                    amount TEXT NOT NULL,
+                    date TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                     )`,

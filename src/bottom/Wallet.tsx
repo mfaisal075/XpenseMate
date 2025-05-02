@@ -66,6 +66,16 @@ interface ActionSheetOption {
   action: () => void;
 }
 
+interface OpeningBalance {
+  date: Date;
+  balance: string;
+}
+
+const initialOpeningBalanceState: OpeningBalance = {
+  date: new Date(),
+  balance: '',
+};
+
 const Wallet = ({tabChange}: any) => {
   const [open, setOpen] = useState(false);
   const {getCurrencySymbol} = useCurrency();
@@ -108,6 +118,10 @@ const Wallet = ({tabChange}: any) => {
   const [actionSheetOptions, setActionSheetOptions] = useState<
     ActionSheetOption[]
   >([]);
+  const [openingBalanceModal, setOpeningBalanceModal] = useState(false);
+  const [opnBalanceForm, setOpnBalanceForm] = useState<OpeningBalance>(
+    initialOpeningBalanceState,
+  );
 
   const toggleEditModal = (modal: string) => {
     setEditModal(modal);
@@ -433,6 +447,16 @@ const Wallet = ({tabChange}: any) => {
     }));
   };
 
+  const handleOpeningBalanceChange = (
+    field: keyof OpeningBalance,
+    value: string | Date,
+  ) => {
+    setOpnBalanceForm(prevSate => ({
+      ...prevSate,
+      [field]: value,
+    }));
+  };
+
   const handleExpenseFormChange = (
     field: keyof FormState,
     value: string | Date,
@@ -639,7 +663,7 @@ const Wallet = ({tabChange}: any) => {
       });
 
       if (type === 'expense') {
-        await checkBudgetExceed(category);
+        await checkBudgetExceed(category, getCurrencySymbol());
       }
 
       Toast.show({
@@ -664,6 +688,46 @@ const Wallet = ({tabChange}: any) => {
     } catch (error) {
       console.log(`Error in adding ${type}`, error);
       Alert.alert('Error', 'Something went wrong. Please try again');
+    }
+  };
+
+  const handleAddOpeningBalance = async () => {
+    if (!opnBalanceForm.balance || !opnBalanceForm.date) {
+      Alert.alert('Error', 'Please fill all the fields');
+      return;
+    }
+
+    const db = openDatabase();
+    const date = opnBalanceForm.date.toISOString().split('T')[0];
+    const createdDate = new Date().toISOString().split('T')[0];
+
+    try {
+      const [result] = await (
+        await db
+      ).executeSql('SELECT COUNT(*) as count FROM opening_balance');
+
+      if (result.rows.item(0).count > 0) {
+        Alert.alert('Error', 'Opening balance is already added.');
+        return;
+      }
+
+      (await db).transaction(async tx => {
+        await tx.executeSql(
+          'INSERT INTO opening_balance (amount, date, created_at, updated_at) VALUES (?, ?, ?, ?)',
+          [opnBalanceForm.balance, date, createdDate, createdDate],
+        );
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: `Your opening balance has been added successfully!`,
+      });
+
+      setOpeningBalanceModal(false);
+      setOpnBalanceForm(initialOpeningBalanceState);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -1079,7 +1143,10 @@ const Wallet = ({tabChange}: any) => {
 
               <TouchableOpacity
                 style={styles.optionButton}
-                onPress={() => {}} // Empty function for no action
+                onPress={() => {
+                  setOpeningBalanceModal(true);
+                  modalizeRef.current?.close();
+                }} // Empty function for no action
               >
                 <View style={styles.optionContent}>
                   <Icon
@@ -1317,7 +1384,7 @@ const Wallet = ({tabChange}: any) => {
                     setExpenseDatePickerVisible(false); // Close the picker
                     if (event.type === 'set' && selectedDate) {
                       // Only update the date if the user selects it
-                      handleIncomeFormChange('date', selectedDate);
+                      handleExpenseFormChange('date', selectedDate);
                     }
                   }}
                 />
@@ -1768,6 +1835,79 @@ const Wallet = ({tabChange}: any) => {
                   handleUpdateTxns();
                 }}>
                 <Text style={styles.saveBtnText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Add Opening Balance */}
+      <Modal visible={openingBalanceModal} transparent animationType="slide">
+        <TouchableOpacity
+          onPressOut={() => {
+            setOpeningBalanceModal(false);
+            setOpnBalanceForm(initialOpeningBalanceState);
+          }}
+          style={styles.modalOverlay}
+          activeOpacity={1}>
+          <View
+            style={[
+              styles.modalContainer,
+              {...styles.modalContainer, width: '90%'},
+            ]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeading}>Add Opening Balance</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setOpeningBalanceModal(false);
+                  setOpnBalanceForm(initialOpeningBalanceState);
+                }}
+                style={styles.closeButton}>
+                <Icon name="close" size={18} color={'#fff'} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              {/* Date Picker */}
+              <TouchableOpacity
+                onPress={() => setDatePickerVisible(true)}
+                style={styles.categoryField}>
+                <Text style={{color: '#000'}}>
+                  {opnBalanceForm.date
+                    ? opnBalanceForm.date.toLocaleDateString()
+                    : 'Select Date'}
+                </Text>
+              </TouchableOpacity>
+              {datePickerVisible && (
+                <DateTimePicker
+                  value={opnBalanceForm.date || new Date()} // Default to current date if no date selected
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setDatePickerVisible(false); // Close the picker
+                    if (event.type === 'set' && selectedDate) {
+                      // Only update the date if the user selects it
+                      handleOpeningBalanceChange('date', selectedDate);
+                    }
+                  }}
+                />
+              )}
+
+              <TextInput
+                placeholder="Add Opening Balance"
+                keyboardType="numeric"
+                value={opnBalanceForm.balance}
+                placeholderTextColor="gray"
+                onChangeText={text =>
+                  handleOpeningBalanceChange('balance', text)
+                }
+                style={styles.inputField}
+              />
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleAddOpeningBalance()}>
+                <Text style={styles.saveBtnText}>Add</Text>
               </TouchableOpacity>
             </View>
           </View>

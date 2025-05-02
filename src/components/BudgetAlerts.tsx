@@ -27,7 +27,10 @@ const getCurrentMonthExpenses = async (categoryName: string) => {
   }
 };
 
-const checkBudgetExceed = async (categoryName: string) => {
+const checkBudgetExceed = async (
+  categoryName: string,
+  currencySymbol: string,
+) => {
   try {
     const db = await openDatabase();
     const [categoryResult] = await db.executeSql(
@@ -56,7 +59,7 @@ const checkBudgetExceed = async (categoryName: string) => {
     if (totalExpenses > budget) {
       try {
         const db = await openDatabase();
-        const notificationMessage = `You have exceeded your budget for ${categoryName} by ₹${(
+        const notificationMessage = `You have exceeded your budget for ${categoryName} by ${currencySymbol} ${(
           totalExpenses - budget
         ).toFixed(2)}`;
 

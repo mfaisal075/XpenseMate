@@ -18,22 +18,8 @@ const AllTxns = ({tabChange}: any) => {
   const {transactions, fetchTransactions} = useTransactionContext();
   const {getCurrencySymbol} = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
-  const [openMonth, setOpenMonth] = useState(false);
   const [openType, setOpenType] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
-
-  const months = [
-    {label: 'All Months', value: 'all'},
-    ...Array.from({length: 12}, (_, i) => {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      return {
-        label: date.toLocaleString('default', {month: 'long', year: 'numeric'}),
-        value: date.getMonth() + '-' + date.getFullYear(),
-      };
-    }).reverse(),
-  ];
 
   useEffect(() => {
     fetchTransactions();
@@ -60,17 +46,7 @@ const AllTxns = ({tabChange}: any) => {
 
     const matchesType = selectedType === 'all' || t.type === selectedType;
 
-    // Month filter logic
-    let matchesMonth = true;
-    if (selectedMonth !== 'all') {
-      const [month, year] = selectedMonth.split('-').map(Number);
-      const transactionDate = new Date(t.date);
-      matchesMonth =
-        transactionDate.getMonth() === month &&
-        transactionDate.getFullYear() === year;
-    }
-
-    return matchesSearch && matchesMonth && matchesType;
+    return matchesSearch && matchesType;
   });
 
   const renderItem = ({item}: any) => (
@@ -143,29 +119,6 @@ const AllTxns = ({tabChange}: any) => {
           />
 
           <View style={styles.dropdownRow}>
-            <View style={{flex: 1, zIndex: 2000, elevation: 3}}>
-              <DropDownPicker
-                open={openMonth}
-                setOpen={setOpenMonth}
-                value={selectedMonth}
-                setValue={setSelectedMonth}
-                items={months}
-                listMode="MODAL"
-                scrollViewProps={{
-                  nestedScrollEnabled: true,
-                }}
-                style={styles.dropdown}
-                dropDownContainerStyle={[
-                  styles.dropdownContainer,
-                  {
-                    zIndex: 2000,
-                  },
-                ]}
-                placeholder="Select Month"
-                textStyle={styles.dropdownText}
-              />
-            </View>
-
             <View style={{flex: 1, zIndex: 2000, marginLeft: 10}}>
               <DropDownPicker
                 open={openType}
@@ -184,7 +137,7 @@ const AllTxns = ({tabChange}: any) => {
                 ]}
                 placeholder="Filter by Type"
                 textStyle={styles.dropdownText}
-                listMode="MODAL"
+                listMode="SCROLLVIEW"
               />
             </View>
           </View>
@@ -276,7 +229,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     paddingVertical: 12,
+    marginHorizontal: 10,
     fontSize: 16,
+    height: 45,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -293,6 +248,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 10,
     minHeight: 45,
+    width: '98%',
   },
   dropdownContainer: {
     borderColor: '#E0E0E0',

@@ -1,6 +1,6 @@
 import {useContext, useEffect, useState} from 'react';
 import {openDatabase} from '../../database';
-import {Transaction, Categories} from '../components/Interface';
+import {Transaction, Categories, OpeningBalance} from '../components/Interface';
 import React from 'react';
 import RNFS from 'react-native-fs';
 import XLSX from 'xlsx';
@@ -12,6 +12,9 @@ interface DataContextProps {
   categories: Categories[];
   incomeCategories: Categories[];
   expenseCategories: Categories[];
+  openingBalance: OpeningBalance[];
+  fetchOpeningBalance: () => Promise<void>;
+  setOpeningBalance: React.Dispatch<React.SetStateAction<OpeningBalance[]>>;
   fetchTransactions: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   exportToExcel: () => Promise<void>;
@@ -31,6 +34,7 @@ export const TransactionProvider = ({
   const [categories, setCategories] = useState<Categories[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<Categories[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Categories[]>([]);
+  const [openingBalance, setOpeningBalance] = useState<OpeningBalance[]>([]);
 
   const exportDataToExcel = async () => {
     try {
@@ -59,10 +63,22 @@ export const TransactionProvider = ({
       }));
       const categorySheet = XLSX.utils.json_to_sheet(exportCategories);
 
+      // Prepare Opening Balance sheet
+      const exportOpeningBalance = openingBalance.map(ob => ({
+        ID: ob.id,
+        Amount: ob.amount,
+        Date: ob.date,
+        CreatedAt: ob.created_at,
+        UpdatedAt: ob.updated_at,
+      }));
+      const openingBalanceSheet =
+        XLSX.utils.json_to_sheet(exportOpeningBalance);
+
       // Create workbook and append both sheets
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, transactionSheet, 'Transactions');
       XLSX.utils.book_append_sheet(wb, categorySheet, 'Categories');
+      XLSX.utils.book_append_sheet(wb, openingBalanceSheet, 'Opening Balance');
 
       const wbout = XLSX.write(wb, {type: 'binary', bookType: 'xlsx'});
       const path = `${
@@ -126,6 +142,26 @@ export const TransactionProvider = ({
                   item.Type,
                   item.Category,
                   item.Description,
+                  item.CreatedAt ?? new Date().toISOString(),
+                  item.UpdatedAt ?? new Date().toISOString(),
+                ],
+              );
+            });
+          }
+
+          // 3. Import Opening Balance
+          const openingBalanceSheet = workbook.Sheets['Opening Balance'];
+          if (openingBalanceSheet) {
+            const openingBalanceData: any[] =
+              XLSX.utils.sheet_to_json(openingBalanceSheet);
+
+            openingBalanceData.forEach(item => {
+              tx.executeSql(
+                `INSERT OR REPLACE INTO opening_balance (id, amount, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+                [
+                  item.ID,
+                  item.Amount,
+                  item.Date,
                   item.CreatedAt ?? new Date().toISOString(),
                   item.UpdatedAt ?? new Date().toISOString(),
                 ],
@@ -225,9 +261,36 @@ export const TransactionProvider = ({
     }
   };
 
+  const fetchOpeningBalance = async () => {
+    try {
+      const db = await openDatabase();
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM opening_balance LIMIT 1',
+          [],
+          (_, result) => {
+            const data: OpeningBalance[] = [];
+            if (result.rows.length > 0) {
+              data.push(result.rows.item(0));
+            }
+            setOpeningBalance(data);
+          },
+          (_, error) => {
+            console.error('Error fetching opening balance:', error);
+            return false;
+          },
+        );
+      });
+    } catch (error) {
+      console.error('Error fetching opening balance:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
+    fetchOpeningBalance();
   }, []);
 
   return (
@@ -241,6 +304,9 @@ export const TransactionProvider = ({
         fetchCategories,
         exportToExcel: exportDataToExcel,
         importDataFromExcel,
+        openingBalance,
+        fetchOpeningBalance,
+        setOpeningBalance,
       }}>
       {children}
     </TransactionContext.Provider>
