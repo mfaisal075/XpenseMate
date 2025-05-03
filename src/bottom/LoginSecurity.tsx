@@ -49,7 +49,6 @@ const initialPasswordChangeForm: PasswordChangeForm = {
 const LoginSecurity = ({goToProfile}: any) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [changePasswordForm, setChangePasswordForm] =
     useState<PasswordChangeForm>(initialPasswordChangeForm);
   const [showCurrent, setShowCurrent] = useState(false);
@@ -72,29 +71,41 @@ const LoginSecurity = ({goToProfile}: any) => {
 
   const handleChangePassword = async () => {
     setLoading(true);
-    setError(null);
+
+    if (!changePasswordForm || !changePasswordForm.currentPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all the fields',
+      });
+      setLoading(false);
+      return;
+    }
 
     if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
-      setError('Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Password Mismatch',
+        text2: 'The passwords you entered do not match. Please try again.',
+      });
       setLoading(false);
       return;
     }
     if (changePasswordForm.newPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-    if (
-      !changePasswordForm.currentPassword ||
-      !changePasswordForm.newPassword ||
-      !changePasswordForm.confirmPassword
-    ) {
-      setError('All fields are required');
+      Toast.show({
+        type: 'error',
+        text1: 'Weak Password',
+        text2: 'Password must be at least 6 characters long',
+      });
       setLoading(false);
       return;
     }
     if (changePasswordForm.currentPassword === changePasswordForm.newPassword) {
-      setError('New password must be different from current password');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'New password must be different from current password',
+      });
       setLoading(false);
       return;
     }
@@ -103,7 +114,6 @@ const LoginSecurity = ({goToProfile}: any) => {
     const user = auth.currentUser;
 
     if (!user) {
-      setError('User not found');
       setLoading(false);
       return;
     }
@@ -125,25 +135,35 @@ const LoginSecurity = ({goToProfile}: any) => {
         text1: 'Password Changed Successfully',
         text2: 'Your password has been updated successfully.',
       });
+
       setLoading(false);
       setVisible(false);
       setChangePasswordForm(initialPasswordChangeForm);
+
+      // Log the user out after password change
+      await auth.signOut();
     } catch (error: any) {
       if (error.code === 'auth/wrong-password') {
-        setError('Current password is incorrect');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Current password is incorrect. Please try again.',
+        });
       } else if (error.code === 'auth/weak-password') {
-        setError('New password is too weak');
+        Toast.show({
+          type: 'error',
+          text1: 'Weak Password',
+          text2: 'New password is too weak. Please try again.',
+        });
       } else {
-        setError('Failed to change password. Please try again later.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to change password. Please try again later.',
+        });
       }
       setLoading(false);
     }
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      setVisible(false);
-      setChangePasswordForm(initialPasswordChangeForm);
-    }, 2000);
   };
 
   const fetchLoginHistory = async () => {
@@ -382,8 +402,6 @@ const LoginSecurity = ({goToProfile}: any) => {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity

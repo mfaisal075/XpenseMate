@@ -8,7 +8,6 @@ import {
   View,
   TextInput,
   Modal,
-  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
@@ -76,7 +75,11 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
 
   const handleSave = async () => {
     if (!editName || !editEmail || !editPhone || !editAddress || !editDOB) {
-      Alert.alert('Please fill in all fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all fields',
+      });
       return;
     }
 
@@ -91,7 +94,11 @@ const AccountDetails = ({goToProfile, navigateToNotification}: any) => {
     }
 
     if (age < 13) {
-      Alert.alert('You must be at least 13 years old');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'You must be at least 13 years old to use this app.',
+      });
       return;
     }
 

@@ -1,5 +1,4 @@
 import {
-  Alert,
   BackHandler,
   StyleSheet,
   Text,
@@ -27,11 +26,19 @@ const Signup = ({navigation}: any) => {
     const db = FIRESTORE_DB;
 
     if (!email || !password || !fullName || !userName || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all the fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all the fields',
+      });
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Password Mismatch',
+        text2: 'The passwords you entered do not match. Please try again.',
+      });
       return;
     }
 
@@ -61,12 +68,23 @@ const Signup = ({navigation}: any) => {
       navigation.replace('Login');
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
-        Alert.alert(
-          'Error',
-          'This email is already in use. Please try logging in.',
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'This email is already in use. Please try logging in.',
+        });
+      } else if (error.code === 'auth/invalid-email') {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'The email address is not valid.',
+        });
       } else {
-        Alert.alert('Error', error.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: error.message,
+        });
       }
       console.error(error.message);
     } finally {

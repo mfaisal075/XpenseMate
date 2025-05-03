@@ -1,5 +1,6 @@
 import {openDatabase} from '../../database';
 import notifee from '@notifee/react-native';
+import {SettingsService} from '../components/databaseService';
 
 const getCurrentMonthExpenses = async (categoryName: string) => {
   const db = await openDatabase();
@@ -32,6 +33,10 @@ const checkBudgetExceed = async (
   currencySymbol: string,
 ) => {
   try {
+    // Check if notifications are enabled
+    const notificationsEnabled = await SettingsService.getNotificationSetting();
+    if (!notificationsEnabled) return;
+
     const db = await openDatabase();
     const [categoryResult] = await db.executeSql(
       `SELECT budget FROM categories 
@@ -39,7 +44,7 @@ const checkBudgetExceed = async (
       [categoryName],
     );
 
-    // ✅ Check if category exists
+    // Check if category exists
     if (categoryResult.rows.length === 0) {
       console.log('Category not found or not an expense type');
       return;

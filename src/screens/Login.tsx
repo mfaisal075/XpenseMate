@@ -20,30 +20,24 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import {ActivityIndicator} from 'react-native';
+import Toast from 'react-native-toast-message';
+import {Dialog, Portal} from 'react-native-paper';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const Login = ({navigation}: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   useEffect(() => {
-    const backPress = () => {
-      Alert.alert('Exit App', 'Do you want to exit?', [
-        {
-          text: 'No',
-          onPress: () => null,
-          style: 'cancel',
-        },
-        {
-          text: 'Yes',
-          onPress: () => BackHandler.exitApp(),
-        },
-      ]);
+    const backAction = () => {
+      setShowExitDialog(true);
       return true;
     };
 
-    BackHandler.addEventListener('hardwareBackPress', backPress);
+    BackHandler.addEventListener('hardwareBackPress', backAction);
   }, []);
 
   const logLoginHistory = async (user: any) => {
@@ -69,7 +63,11 @@ const Login = ({navigation}: any) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all the fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all the fields',
+      });
       return;
     }
 
@@ -88,6 +86,12 @@ const Login = ({navigation}: any) => {
         forceLogout: false,
       });
 
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Login successful!',
+      });
+
       navigation.replace('Home');
 
       // 🔥 Log login to Firestore
@@ -98,28 +102,39 @@ const Login = ({navigation}: any) => {
       // Handle different Firebase error codes
       switch (error.code) {
         case 'auth/user-not-found':
-          Alert.alert(
-            'Error',
-            'No account found with this email. Please sign up.',
-          );
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'No account found with this email. Please sign up.',
+          });
           break;
         case 'auth/wrong-password':
-          Alert.alert('Error', 'Incorrect password. Please try again.');
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Incorrect password. Please try again.',
+          });
           break;
         case 'auth/invalid-email':
-          Alert.alert('Error', 'The email address is not valid.');
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'The email address is not valid.',
+          });
           break;
         case 'auth/invalid-credential':
-          Alert.alert(
-            'Error',
-            'Invalid credential. Please check your email and password.',
-          );
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'Invalid credential. Please check your email and password.',
+          });
           break;
         default:
-          Alert.alert(
-            'Error',
-            'An unexpected error occurred. Please try again later.',
-          );
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: 'An unexpected error occurred. Please try again later.',
+          });
           break;
       }
     } finally {
@@ -240,6 +255,59 @@ const Login = ({navigation}: any) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Exit App Modal */}
+      <Portal>
+        <Dialog
+          visible={showExitDialog}
+          onDismiss={() => setShowExitDialog(false)}
+          style={styles.dialogContainer}>
+          <Dialog.Title style={styles.dialogTitle}>
+            <View style={{alignItems: 'center'}}>
+              <View style={styles.dialogIconContainer}>
+                <MaterialIcons
+                  name="power-off"
+                  size={40}
+                  color="#D9534F"
+                  style={styles.dialogIcon}
+                />
+              </View>
+              <Text style={styles.title}>Exit Application</Text>
+            </View>
+          </Dialog.Title>
+
+          <Dialog.Content>
+            <Text style={styles.dialogText}>
+              Are you sure you want to exit the app?
+            </Text>
+          </Dialog.Content>
+
+          <Dialog.Actions style={styles.exitDialogActions}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => setShowExitDialog(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.confirmButton]}
+              onPress={() => {
+                BackHandler.exitApp();
+                setShowExitDialog(false);
+              }}>
+              <View style={styles.exitButtonContent}>
+                <MaterialIcons
+                  name="exit-to-app"
+                  size={18}
+                  color="#fff"
+                  style={styles.exitIcon}
+                />
+                <Text style={styles.confirmButtonText}>Exit</Text>
+              </View>
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -324,5 +392,87 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     tintColor: 'rgba(0,0,0,0.8)',
+  },
+
+  //Exit App Modal Styles
+  dialogContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    paddingTop: 0,
+  },
+  dialogIconContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    padding: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dialogIcon: {
+    backgroundColor: '#F8E5E5',
+    borderRadius: 25,
+    padding: 8,
+  },
+  dialogTitle: {
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  dialogText: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  exitDialogActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  dialogButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#EEF8F7',
+    borderWidth: 1,
+    borderColor: '#888',
+  },
+  confirmButton: {
+    backgroundColor: '#D9534F',
+    marginLeft: 15,
+  },
+  cancelButtonText: {
+    color: '#444',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  exitButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  exitIcon: {
+    marginRight: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 10,
+    textAlign: 'center',
+    color: '#1B5C58',
   },
 });

@@ -4,8 +4,8 @@ import {Transaction, Categories, OpeningBalance} from '../components/Interface';
 import React from 'react';
 import RNFS from 'react-native-fs';
 import XLSX from 'xlsx';
-import {Alert} from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+import Toast from 'react-native-toast-message';
 
 interface DataContextProps {
   transactions: Transaction[];
@@ -87,10 +87,18 @@ export const TransactionProvider = ({
 
       await RNFS.writeFile(path, wbout, 'ascii');
       console.log('Exported to', path);
-      Alert.alert(`Data exported to:\n${path}`);
+      Toast.show({
+        type: 'success',
+        text1: 'Export Successful',
+        text2: `Data exported to:\n${path}`,
+      });
     } catch (error) {
       console.error('Export error:', error);
-      Alert.alert('Failed to export data.');
+      Toast.show({
+        type: 'error',
+        text1: 'Export Failed',
+        text2: 'Failed to export data. Please try again.',
+      });
     }
   };
 
@@ -171,12 +179,20 @@ export const TransactionProvider = ({
         },
         error => {
           console.error('Transaction error while importing:', error);
-          Alert.alert('Failed to import data.');
+          Toast.show({
+            type: 'error',
+            text1: 'Import Failed',
+            text2: 'Failed to import data. Please try again.',
+          });
         },
         () => {
           fetchTransactions();
           fetchCategories();
-          Alert.alert('Data imported successfully!');
+          Toast.show({
+            type: 'success',
+            text1: 'Import Successful',
+            text2: 'Data imported successfully!',
+          });
         },
       );
     } catch (err) {
@@ -185,7 +201,11 @@ export const TransactionProvider = ({
         err.message !== 'User canceled document picker'
       ) {
         console.error('Import error:', err);
-        Alert.alert('Failed to import data.');
+        Toast.show({
+          type: 'error',
+          text1: 'Import Failed',
+          text2: 'Failed to import data. Please try again.',
+        });
       }
     }
   };

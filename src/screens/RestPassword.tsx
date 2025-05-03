@@ -1,5 +1,4 @@
 import {
-  Alert,
   BackHandler,
   Image,
   StyleSheet,
@@ -22,12 +21,20 @@ const RestPassword = ({navigation}: any) => {
 
   const handleResetPassword = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please fill in all the fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all the fields',
+      });
       return;
     }
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
     if (!emailPattern.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address',
+      });
       return;
     }
 
@@ -36,7 +43,11 @@ const RestPassword = ({navigation}: any) => {
 
       const methods = await fetchSignInMethodsForEmail(auth, email);
       if (methods.length === 0) {
-        Alert.alert('Error', 'No account found with this email address');
+        Toast.show({
+          type: 'error',
+          text1: 'No Account Found',
+          text2: 'No account found with this email address',
+        });
         return;
       }
 
@@ -52,7 +63,11 @@ const RestPassword = ({navigation}: any) => {
       navigation.replace('Login');
     } catch (error: any) {
       console.error('Error sending password reset email:', error.message);
-      Alert.alert('Password Reset Failed', error.message);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message,
+      });
     }
   };
 

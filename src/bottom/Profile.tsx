@@ -1,5 +1,4 @@
 import {
-  Alert,
   BackHandler,
   Image,
   StyleSheet,
@@ -13,6 +12,7 @@ import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
 import {signOut} from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 import {doc, getDoc} from 'firebase/firestore';
+import {ActivityIndicator, Dialog, Portal} from 'react-native-paper';
 
 const Profile = ({
   tabChange,
@@ -25,6 +25,8 @@ const Profile = ({
 }: any) => {
   const [name, setName] = useState('');
   const [userName, setUserName] = useState('');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   const fetchUserData = async () => {
     const db = FIRESTORE_DB;
@@ -51,34 +53,30 @@ const Profile = ({
   }, []);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Confirm Logout',
-      'Are you sure you want to log out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'OK',
-          onPress: () => {
-            signOut(FIREBASE_AUTH)
-              .then(() => {
-                navigateToLogin();
-                Toast.show({
-                  type: 'success',
-                  text1: 'Logged Out',
-                  text2: 'You have been successfully logged out',
-                });
-              })
-              .catch(error => {
-                console.error('Error signing out: ', error);
-              });
-          },
-        },
-      ],
-      {cancelable: false},
-    );
+    setShowLogoutModal(true);
+  };
+
+  const performLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await signOut(FIREBASE_AUTH);
+      navigateToLogin();
+      Toast.show({
+        type: 'success',
+        text1: 'Logged Out',
+        text2: 'You have been successfully logged out',
+      });
+    } catch (error) {
+      console.error('Error signing out: ', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Logout Failed',
+        text2: 'Could not log out. Please try again.',
+      });
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutModal(false);
+    }
   };
 
   return (
@@ -203,6 +201,58 @@ const Profile = ({
           </View>
         </View>
       </View>
+
+      {/* Log out Modal */}
+      <Portal>
+        <Dialog
+          visible={showLogoutModal}
+          onDismiss={() => setShowLogoutModal(false)}
+          style={styles.dialogContainer}>
+          <Dialog.Title style={styles.dialogTitle}>
+            <View
+              style={{
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}>
+              <Image
+                source={require('../assets/logout.png')}
+                style={{
+                  width: 30,
+                  height: 30,
+                  tintColor: 'red',
+                  marginRight: 8,
+                }}
+                resizeMode="contain"
+              />
+              <Text style={styles.title}>Logout Confirmation</Text>
+            </View>
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.dialogText}>
+              Are you sure you want to log out of your account?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => setShowLogoutModal(false)}
+              disabled={logoutLoading}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dialogButton, {backgroundColor: 'red'}]}
+              onPress={performLogout}
+              disabled={logoutLoading}>
+              {logoutLoading ? (
+                <ActivityIndicator color="#fff" size={20} />
+              ) : (
+                <Text style={styles.confirmButtonText}>Logout</Text>
+              )}
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -302,5 +352,65 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#ccc',
     marginVertical: 10,
+  },
+
+  //Logout Modal Styles
+  dialogContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+  },
+  dialogTitle: {
+    color: '#1B5C58',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  dialogText: {
+    color: '#666',
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 15,
+    paddingHorizontal: 10,
+  },
+  dialogButton: {
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginLeft: 10,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#EEF8F7',
+    borderWidth: 1,
+    borderColor: '#1B5C58',
+  },
+  confirmButton: {
+    backgroundColor: '#1B5C58',
+  },
+  cancelButtonText: {
+    color: '#1B5C58',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#1B5C58',
   },
 });

@@ -105,10 +105,50 @@ const initOpeningBalanceTable = async () => {
   }
 };
 
+const initSettingsTable = async () => {
+  try {
+    const db = await openDatabase();
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        setting_name TEXT UNIQUE,
+        setting_value TEXT
+      );
+    `);
+    console.log('Settings table initialized');
+  } catch (error) {
+    console.error('Error initializing settings table:', error);
+    throw error;
+  }
+};
+
+const initMonthlyBudgetTable = async () => {
+  try {
+    const db = await openDatabase();
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS monthly_budget (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        month TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        budget REAL NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    console.log('Monthly budget table initialized');
+  } catch (error) {
+    console.error('Error initializing monthly budget table:', error);
+    throw error;
+  }
+};
+
 export {
   openDatabase,
   initTransactionsTable,
   initCategoriesTable,
   initNotificationsTable,
   initOpeningBalanceTable,
+  initSettingsTable,
+  initMonthlyBudgetTable,
 };

@@ -1,5 +1,4 @@
 import {
-  Alert,
   BackHandler,
   FlatList,
   Image,
@@ -9,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import {FIREBASE_AUTH, FIRESTORE_DB} from '../../FirebaseConfig';
 import {doc, getDoc} from 'firebase/firestore';
@@ -19,17 +19,14 @@ import {useCurrency} from '../components/CurrencyContext';
 
 const Main = ({navigateToNotification, goToAllTxns}: any) => {
   const [name, setName] = useState('');
-  const {
-    transactions,
-    fetchTransactions,
-    openingBalance,
-    fetchOpeningBalance,
-  } = useTransactionContext();
+  const {transactions, fetchTransactions, openingBalance, fetchOpeningBalance} =
+    useTransactionContext();
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const {getCurrencySymbol} = useCurrency();
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const openDetailsModal = ({transaction}: any) => {
     setDetailsVisible(true);
@@ -57,22 +54,12 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
 
   useEffect(() => {
     fetchOpeningBalance();
-    const backPress = () => {
-      Alert.alert('Exit App', 'Do you want to exit?', [
-        {
-          text: 'No',
-          onPress: () => null,
-          style: 'cancel',
-        },
-        {
-          text: 'Yes',
-          onPress: () => BackHandler.exitApp(),
-        },
-      ]);
+    const backAction = () => {
+      setShowExitDialog(true);
       return true;
     };
 
-    BackHandler.addEventListener('hardwareBackPress', backPress);
+    BackHandler.addEventListener('hardwareBackPress', backAction);
 
     fetchUserData();
     fetchTransactions();
@@ -506,6 +493,57 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
             </TouchableOpacity>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Exit App Modal */}
+        <Dialog
+          visible={showExitDialog}
+          onDismiss={() => setShowExitDialog(false)}
+          style={styles.dialogContainer}>
+          <Dialog.Title style={styles.dialogTitle}>
+            <View style={{alignItems: 'center'}}>
+              <View style={styles.dialogIconContainer}>
+                <MaterialIcons
+                  name="power-off"
+                  size={40}
+                  color="#D9534F"
+                  style={styles.dialogIcon}
+                />
+              </View>
+              <Text style={styles.title}>Exit Application</Text>
+            </View>
+          </Dialog.Title>
+
+          <Dialog.Content>
+            <Text style={styles.dialogText}>
+              Are you sure you want to exit the app?
+            </Text>
+          </Dialog.Content>
+
+          <Dialog.Actions style={styles.exitDialogActions}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => setShowExitDialog(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.confirmButton]}
+              onPress={() => {
+                BackHandler.exitApp();
+                setShowExitDialog(false);
+              }}>
+              <View style={styles.exitButtonContent}>
+                <MaterialIcons
+                  name="exit-to-app"
+                  size={18}
+                  color="#fff"
+                  style={styles.exitIcon}
+                />
+                <Text style={styles.confirmButtonText}>Exit</Text>
+              </View>
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
@@ -890,5 +928,87 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignSelf: 'center',
     marginTop: 5,
+  },
+
+  //Exit App Modal Styles
+  dialogContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    paddingTop: 0,
+  },
+  dialogIconContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    padding: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dialogIcon: {
+    backgroundColor: '#F8E5E5',
+    borderRadius: 25,
+    padding: 8,
+  },
+  dialogTitle: {
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  dialogText: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  exitDialogActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  dialogButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#EEF8F7',
+    borderWidth: 1,
+    borderColor: '#888',
+  },
+  confirmButton: {
+    backgroundColor: '#D9534F',
+    marginLeft: 15,
+  },
+  cancelButtonText: {
+    color: '#444',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  exitButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  exitIcon: {
+    marginRight: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 10,
+    textAlign: 'center',
+    color: '#1B5C58',
   },
 });

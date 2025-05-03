@@ -1,4 +1,4 @@
-import {Alert, Image, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Image, StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import Main from '../bottom/Main';
 import Wallet from '../bottom/Wallet';
@@ -15,6 +15,7 @@ import Setting from '../bottom/Setting';
 import PrivacyPolicy from '../bottom/PrivacyPolicy';
 import ContactUs from '../bottom/ContactUs';
 import AllTxns from '../bottom/AllTxns';
+import BudgetManagement from '../bottom/BudgetManagement';
 
 const Home = ({navigation}: any) => {
   const [selectedTab, setSelectedTab] = useState('Main');
@@ -30,6 +31,9 @@ const Home = ({navigation}: any) => {
   };
   const navigateToSetting = () => {
     setSelectedTab('Setting');
+  };
+  const navigateToBudgetManagement = () => {
+    setSelectedTab('BudgetManagement');
   };
   const navigateToPrivacyPolicy = () => {
     setSelectedTab('PrivacyPolicy');
@@ -58,12 +62,18 @@ const Home = ({navigation}: any) => {
     const user = auth.currentUser;
 
     if (!user) {
-      Alert.alert('Error', 'Please login to continue', [
-        {
-          text: 'OK',
-          onPress: () => navigation.replace('Login'),
-        },
-      ]);
+      // Show toast first
+      Toast.show({
+        type: 'error',
+        text1: 'Session expired',
+        text2: 'Please login to continue',
+        visibilityTime: 2000,
+      });
+
+      setTimeout(() => {
+        navigation.replace('Login');
+      }, 2000);
+
       return;
     }
 
@@ -119,7 +129,10 @@ const Home = ({navigation}: any) => {
         <Setting
           goToProfile={() => goToProfile()}
           navigateToContact={() => navigateToContact()}
+          navigateToBudgetManagement={() => navigateToBudgetManagement()}
         />
+      ) : selectedTab === 'BudgetManagement' ? (
+        <BudgetManagement navigateToSetting={() => navigateToSetting()} />
       ) : selectedTab === 'PrivacyPolicy' ? (
         <PrivacyPolicy goToProfile={() => goToProfile()} />
       ) : selectedTab === 'ContactUs' ? (
@@ -141,7 +154,8 @@ const Home = ({navigation}: any) => {
       selectedTab === 'Setting' ||
       selectedTab === 'PrivacyPolicy' ||
       selectedTab === 'ContactUs' ||
-      selectedTab === 'AllTxns' ? null : (
+      selectedTab === 'AllTxns' ||
+      selectedTab === 'BudgetManagement' ? null : (
         <View style={styles.barContainer}>
           <TouchableOpacity
             style={styles.btnContainer}

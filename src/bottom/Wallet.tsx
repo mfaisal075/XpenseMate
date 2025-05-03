@@ -1,5 +1,4 @@
 import {
-  Alert,
   BackHandler,
   Image,
   StyleSheet,
@@ -136,7 +135,11 @@ const Wallet = ({tabChange}: any) => {
       const {type, name, image, budget} = categoryForm;
 
       if (!categoryForm.name || !categoryForm.type) {
-        Alert.alert('Error', 'Please fill all the fields');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please fill all the fields',
+        });
         return;
       }
 
@@ -194,12 +197,11 @@ const Wallet = ({tabChange}: any) => {
       fetchCategories();
     } catch (error) {
       console.error('Error in updating category:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update category. Please try again.',
+      });
     }
   };
 
@@ -216,12 +218,20 @@ const Wallet = ({tabChange}: any) => {
         : expenseForm.description;
 
       if (!category || !amount || !date || !description) {
-        Alert.alert('Error', 'Please fill all the fields');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please fill all the fields',
+        });
         return;
       }
 
       if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
-        Alert.alert('Invalid input', 'Please enter a valid amount');
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid input',
+          text2: 'Please enter a valid amount',
+        });
         return;
       }
 
@@ -271,7 +281,11 @@ const Wallet = ({tabChange}: any) => {
       fetchTransactions();
     } catch (error) {
       console.error('Error updating transaction:', error);
-      Alert.alert('Error', 'Failed to update transaction');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update transaction. Please try again.',
+      });
     }
   };
 
@@ -303,12 +317,11 @@ const Wallet = ({tabChange}: any) => {
       fetchCategories();
     } catch (error) {
       console.error('Error in updating category status:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to delete category. Please try again.',
+      });
     }
   };
 
@@ -340,12 +353,11 @@ const Wallet = ({tabChange}: any) => {
       fetchTransactions();
     } catch (error) {
       console.error('Error in updating transaction status:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to delete transaction. Please try again.',
+      });
     }
   };
 
@@ -539,13 +551,21 @@ const Wallet = ({tabChange}: any) => {
       const {type, name, image, budget} = categoryForm;
 
       if (budget && !/^\d+(\.\d{1,2})?$/.test(budget)) {
-        Alert.alert('Invalid input', 'Please enter a valid budget amount');
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid input',
+          text2: 'Please enter a valid budget amount',
+        });
         return;
       }
       const db = await openDatabase();
 
       if (!type || !name) {
-        Alert.alert('Error', 'Please fill all the fields');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please fill all the fields',
+        });
         return;
       }
 
@@ -559,10 +579,11 @@ const Wallet = ({tabChange}: any) => {
       );
 
       if (result.rows.length > 0) {
-        Alert.alert(
-          'Duplicate Category',
-          'A category with the same name already exists.',
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Duplicate Category',
+          text2: 'A category with the same name already exists.',
+        });
         return;
       }
 
@@ -613,12 +634,11 @@ const Wallet = ({tabChange}: any) => {
       fetchCategories();
     } catch (error) {
       console.error('Error in adding category:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to add category. Please try again.',
+      });
     }
   };
 
@@ -632,12 +652,20 @@ const Wallet = ({tabChange}: any) => {
       : expenseForm.description;
 
     if (!category || !amount || !date || !description) {
-      Alert.alert('Error', 'Please fill all the fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all the fields',
+      });
       return;
     }
 
     if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
-      Alert.alert('Invalid input', 'Please enter a valid amount');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid input',
+        text2: 'Please enter a valid amount',
+      });
       return;
     }
 
@@ -687,13 +715,21 @@ const Wallet = ({tabChange}: any) => {
       fetchTransactions(); // Fetch transactions again to update the list
     } catch (error) {
       console.log(`Error in adding ${type}`, error);
-      Alert.alert('Error', 'Something went wrong. Please try again');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: `Failed to add ${type}. Please try again.`,
+      });
     }
   };
 
   const handleAddOpeningBalance = async () => {
     if (!opnBalanceForm.balance || !opnBalanceForm.date) {
-      Alert.alert('Error', 'Please fill all the fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill all the fields',
+      });
       return;
     }
 
@@ -707,7 +743,11 @@ const Wallet = ({tabChange}: any) => {
       ).executeSql('SELECT COUNT(*) as count FROM opening_balance');
 
       if (result.rows.item(0).count > 0) {
-        Alert.alert('Error', 'Opening balance is already added.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Opening balance is already added.',
+        });
         return;
       }
 
@@ -867,15 +907,27 @@ const Wallet = ({tabChange}: any) => {
 
   const generateReport = async (transactions: Transaction[]) => {
     if (transactions.length === 0) {
-      Alert.alert('Error', 'No transactions found');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No transactions found for the selected criteria.',
+      });
       return;
     }
     if (selectedReportCategories.length === 0) {
-      Alert.alert('Error', 'Please select at least one category');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select at least one category.',
+      });
       return;
     }
     if (!startDate || !endDate) {
-      Alert.alert('Error', 'Please select start and end date');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select start and end date.',
+      });
       return;
     }
     if (
@@ -883,7 +935,11 @@ const Wallet = ({tabChange}: any) => {
       endDate &&
       new Date(startDate).getTime() > new Date(endDate).getTime()
     ) {
-      Alert.alert('Error', 'Start date cannot be greater than end date');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Start date cannot be greater than end date.',
+      });
       return;
     }
     const totalIncome = transactions
@@ -974,10 +1030,11 @@ const Wallet = ({tabChange}: any) => {
       reportModalClose();
     } catch (error) {
       console.error('Error generating report:', error);
-      Alert.alert(
-        'Error',
-        'Something went wrong while generating the report. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to generate report. Please try again.',
+      });
     }
   };
 
@@ -1188,6 +1245,7 @@ const Wallet = ({tabChange}: any) => {
             setIncomeForm(initialFormState);
             setIncomeCategory('');
           }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeading}>Add Income</Text>
@@ -1304,6 +1362,7 @@ const Wallet = ({tabChange}: any) => {
             setExpenseForm(initialFormState);
             setExpenseCategory('');
           }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeading}>Add Expense</Text>
@@ -1420,6 +1479,7 @@ const Wallet = ({tabChange}: any) => {
             setCategoryModalVisible(false);
             setCategoryForm(initialCategoryState);
           }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeading}>Add Category</Text>
@@ -1551,6 +1611,7 @@ const Wallet = ({tabChange}: any) => {
             setEditModal('');
             setSelectedCategory(null);
           }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeading}>Edit Category</Text>
@@ -1681,6 +1742,7 @@ const Wallet = ({tabChange}: any) => {
             setEditModal('');
             setSelectedTransaction(null);
           }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeading}>Edit Transaction</Text>
@@ -1850,6 +1912,7 @@ const Wallet = ({tabChange}: any) => {
           }}
           style={styles.modalOverlay}
           activeOpacity={1}>
+          <Toast />
           <View
             style={[
               styles.modalContainer,

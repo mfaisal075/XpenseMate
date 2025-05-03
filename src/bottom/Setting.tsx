@@ -13,8 +13,13 @@ import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {useCurrency} from '../components/CurrencyContext';
 import {useTransactionContext} from '../components/TransactionContext';
+import {SettingsService} from '../components/databaseService';
 
-const Setting = ({goToProfile, navigateToContact}: any) => {
+const Setting = ({
+  goToProfile,
+  navigateToContact,
+  navigateToBudgetManagement,
+}: any) => {
   const {currency, setCurrency} = useCurrency();
   const {exportToExcel, importDataFromExcel} = useTransactionContext();
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
@@ -26,6 +31,16 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+
+  const loadNotificationSetting = async () => {
+    const enabled = await SettingsService.getNotificationSetting();
+    setNotificationEnabled(enabled);
+  };
+
+  const handleNotificationToggle = async (value: boolean) => {
+    setNotificationEnabled(value);
+    await SettingsService.setNotificationSetting(value);
+  };
 
   const months = [
     'January',
@@ -43,6 +58,7 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
   ];
 
   useEffect(() => {
+    loadNotificationSetting();
     const backAction = () => {
       goToProfile();
       return true;
@@ -90,11 +106,11 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
           <Text style={styles.sectionTitle}>General Settings</Text>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => setBudgetModalVisible(true)}>
+            onPress={() => navigateToBudgetManagement()}>
             <View style={styles.buttonContent}>
               <Icon name="wallet" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Set Budget</Text>
+                <Text style={styles.buttonTitle}>Budget Management</Text>
                 <Text style={styles.buttonSubtitle}>
                   Monthly spending limit
                 </Text>
@@ -218,113 +234,13 @@ const Setting = ({goToProfile, navigateToContact}: any) => {
               <Text style={styles.currencyText}>Enable Notifications</Text>
               <Switch
                 value={notificationEnabled}
-                onValueChange={value => setNotificationEnabled(value)}
+                onValueChange={handleNotificationToggle}
                 thumbColor={notificationEnabled ? '#1B5C58' : '#f4f3f4'}
                 trackColor={{false: '#767577', true: '#43888380'}}
               />
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
-
-      {/* Budget Modal */}
-      {isBudgetModalVisible && (
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.modalBackdrop}
-          onPress={e => {
-            if (e.target === e.currentTarget) {
-              setBudgetModalVisible(false);
-            }
-          }}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Set Monthly Budget</Text>
-
-            {/* Month/Year Picker */}
-            <TouchableOpacity
-              style={styles.monthPickerButton}
-              onPress={() => setShowMonthPicker(true)}>
-              <Text style={styles.monthPickerText}>
-                {months[selectedMonth]} {selectedYear}
-              </Text>
-              <Icon name="calendar-month" size={20} color="#1B5C58" />
-            </TouchableOpacity>
-
-            {/* Budget Input */}
-            <TextInput
-              placeholder="Enter budget amount"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={monthlyBudget}
-              onChangeText={setMonthlyBudget}
-              style={styles.budgetInput}
-            />
-
-            <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setBudgetModalVisible(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={() => {
-                  // Handle saving budget with month/year
-                  if (monthlyBudget && !isNaN(Number(monthlyBudget))) {
-                    setBudgetModalVisible(false);
-                  }
-                }}>
-                <Text style={styles.saveButtonText}>Save Budget</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Month Picker Modal */}
-      <Modal visible={showMonthPicker} transparent={true} animationType="slide">
-        <View style={styles.monthPickerContainer}>
-          <View style={styles.monthPickerHeader}>
-            <Text style={styles.monthPickerTitle}>Select Month</Text>
-            <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-              <Icon name="close" size={24} color="#1B5C58" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.yearSelector}>
-            <TouchableOpacity onPress={() => setSelectedYear(prev => prev - 1)}>
-              <Icon name="chevron-left" size={24} color="#1B5C58" />
-            </TouchableOpacity>
-            <Text style={styles.selectedYear}>{selectedYear}</Text>
-            <TouchableOpacity onPress={() => setSelectedYear(prev => prev + 1)}>
-              <Icon name="chevron-right" size={24} color="#1B5C58" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.monthGrid}>
-            {months.map((month, index) => (
-              <TouchableOpacity
-                key={month}
-                style={[
-                  styles.monthButton,
-                  selectedMonth === index && styles.selectedMonthButton,
-                ]}
-                onPress={() => {
-                  setSelectedMonth(index);
-                  setShowMonthPicker(false);
-                }}>
-                <Text
-                  style={[
-                    styles.monthText,
-                    selectedMonth === index && styles.selectedMonthText,
-                  ]}>
-                  {month.slice(0, 3)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
       </Modal>
     </View>
   );

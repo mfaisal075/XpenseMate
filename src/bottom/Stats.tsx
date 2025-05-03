@@ -14,7 +14,6 @@ import {useTransactionContext} from '../components/TransactionContext';
 import {Transaction} from '../components/Interface';
 import Toast from 'react-native-toast-message';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
-import {Alert} from 'react-native';
 import {ProgressBar} from 'react-native-paper';
 import {useCurrency} from '../components/CurrencyContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -170,7 +169,11 @@ const Stats = ({tabChange}: any) => {
   // Generate Report
   const generateReport = async () => {
     if (transactions.length === 0) {
-      Alert.alert('Error', 'No transactions found');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No transactions found to generate a report.',
+      });
       return;
     }
 
@@ -258,10 +261,11 @@ const Stats = ({tabChange}: any) => {
       });
     } catch (error) {
       console.error('Error generating report:', error);
-      Alert.alert(
-        'Error',
-        'Something went wrong while generating the report. Please try again.',
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to generate the report. Please try again.',
+      });
     }
   };
 
@@ -423,8 +427,13 @@ const Stats = ({tabChange}: any) => {
                     category.budget !== null && category.budget !== undefined;
                   const budget = parseFloat(category.budget) || 0;
                   const percentage =
-                    hasBudget && budget > 0 ? (totalSpent / budget) * 100 : 0;
-                  const color = getProgressColor(percentage, hasBudget);
+                    hasBudget && budget > 0
+                      ? Math.min((totalSpent / budget) * 100, 100)
+                      : 0;
+                  const color =
+                    percentage >= 100
+                      ? 'red'
+                      : getProgressColor(percentage, hasBudget);
 
                   return (
                     <View key={category.id} style={styles.categoryItem}>
@@ -458,7 +467,7 @@ const Stats = ({tabChange}: any) => {
                           ]}>
                           <ProgressBar
                             indeterminate={false}
-                            progress={Math.min(percentage, 100) / 100}
+                            progress={percentage / 100}
                             color={color}
                             style={styles.progressBar}
                           />

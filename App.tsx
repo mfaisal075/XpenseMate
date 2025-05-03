@@ -7,12 +7,15 @@ import {
   initCategoriesTable,
   initNotificationsTable,
   initOpeningBalanceTable,
+  initSettingsTable,
+  initMonthlyBudgetTable,
 } from './database';
 import Toast from 'react-native-toast-message';
 import {TransactionProvider} from './src/components/TransactionContext';
 import {CurrencyProvider} from './src/components/CurrencyContext';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 import {PermissionsAndroid, Platform} from 'react-native';
+import {SettingsService} from './src/components/databaseService';
 
 const App = () => {
   useEffect(() => {
@@ -25,7 +28,12 @@ const App = () => {
     }
 
     async function requestPermissions() {
-      // For Android 13+
+      // First check if user enabled notifications in app settings
+      const notificationsEnabled =
+        await SettingsService.getNotificationSetting();
+      if (!notificationsEnabled) return;
+
+      // Rest of your existing permission code
       if (Platform.OS === 'android' && Platform.Version >= 33) {
         const hasPermission = await PermissionsAndroid.check(
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
@@ -38,12 +46,17 @@ const App = () => {
         }
       }
 
-      // Notifee's internal permission handling (works for iOS and older Android)
+      // Notifee's internal permission handling
       await notifee.requestPermission();
     }
 
     async function createNotificationChannel() {
       try {
+        // Check if notifications are enabled before creating channel
+        const notificationsEnabled =
+          await SettingsService.getNotificationSetting();
+        if (!notificationsEnabled) return;
+
         const channelId = await notifee.createChannel({
           id: 'budget-alerts',
           name: 'Budget Exceed Alerts',
@@ -62,6 +75,8 @@ const App = () => {
           initTransactionsTable(),
           initNotificationsTable(),
           initOpeningBalanceTable(),
+          initSettingsTable(),
+          initMonthlyBudgetTable(),
         ]);
       } catch (error) {
         console.error('Error initializing database:', error);

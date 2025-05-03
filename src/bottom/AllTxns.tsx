@@ -13,6 +13,9 @@ import {useTransactionContext} from '../components/TransactionContext';
 import LinearGradient from 'react-native-linear-gradient';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useCurrency} from '../components/CurrencyContext';
+import {Dialog, Portal} from 'react-native-paper';
+import {Transaction} from '../components/Interface';
+import DatePicker from 'react-native-date-picker';
 
 const AllTxns = ({tabChange}: any) => {
   const {transactions, fetchTransactions} = useTransactionContext();
@@ -20,6 +23,13 @@ const AllTxns = ({tabChange}: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [openType, setOpenType] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
+  const [fromDate, setFromDate] = useState<Date | null>(new Date());
+  const [toDate, setToDate] = useState<Date | null>(new Date());
+  const [openFromDate, setOpenFromDate] = useState(false);
+  const [openToDate, setOpenToDate] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -46,39 +56,59 @@ const AllTxns = ({tabChange}: any) => {
 
     const matchesType = selectedType === 'all' || t.type === selectedType;
 
-    return matchesSearch && matchesType;
+    const txnDate = new Date(t.date);
+    const matchesFromDate = fromDate
+      ? txnDate >= new Date(fromDate.setHours(0, 0, 0, 0))
+      : true;
+    const matchesToDate = toDate
+      ? txnDate <= new Date(toDate.setHours(23, 59, 59, 999))
+      : true;
+
+    return matchesSearch && matchesType && matchesFromDate && matchesToDate;
   });
 
+  const detailsModalHandler = (item: any) => {
+    setSelectedTransaction(item);
+    setDetailsModalVisible(true);
+  };
+
+  const closeDetailsModal = () => {
+    setDetailsModalVisible(false);
+    setSelectedTransaction(null);
+  };
+
   const renderItem = ({item}: any) => (
-    <View style={styles.transactionItem}>
-      <View style={styles.itemLeft}>
-        <Image
-          source={
-            item.categoryImage
-              ? {uri: `file://${item.categoryImage}`}
-              : item.type === 'Income'
-              ? require('../assets/income.png')
-              : require('../assets/expense.png')
-          }
-          style={styles.categoryImage}
-        />
-        <View>
-          <Text style={styles.categoryText}>{item.category}</Text>
-          <Text style={styles.dateText}>
-            {new Date(item.date).toLocaleDateString()}
-          </Text>
+    <TouchableOpacity onPress={() => detailsModalHandler(item)}>
+      <View style={styles.transactionItem}>
+        <View style={styles.itemLeft}>
+          <Image
+            source={
+              item.categoryImage
+                ? {uri: `file://${item.categoryImage}`}
+                : item.type === 'Income'
+                ? require('../assets/income.png')
+                : require('../assets/expense.png')
+            }
+            style={styles.categoryImage}
+          />
+          <View>
+            <Text style={styles.categoryText}>{item.category}</Text>
+            <Text style={styles.dateText}>
+              {new Date(item.date).toLocaleDateString()}
+            </Text>
+          </View>
         </View>
+        <Text
+          style={[
+            styles.amount,
+            {color: item.type === 'income' ? '#1F8A70' : '#D9534F'},
+          ]}>
+          {item.type === 'income' ? '+' : '-'}
+          {getCurrencySymbol()}
+          {item.amount.toLocaleString()}
+        </Text>
       </View>
-      <Text
-        style={[
-          styles.amount,
-          {color: item.type === 'income' ? '#1F8A70' : '#D9534F'},
-        ]}>
-        {item.type === 'income' ? '+' : '-'}
-        {getCurrencySymbol()}
-        {item.amount.toLocaleString()}
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -118,8 +148,9 @@ const AllTxns = ({tabChange}: any) => {
             onChangeText={setSearchQuery}
           />
 
-          <View style={styles.dropdownRow}>
-            <View style={{flex: 1, zIndex: 2000, marginLeft: 10}}>
+          {/* Type Filter */}
+          <View style={[styles.dropdownRow, {zIndex: 2000}]}>
+            <View style={{flex: 1}}>
               <DropDownPicker
                 open={openType}
                 setOpen={setOpenType}
@@ -131,13 +162,75 @@ const AllTxns = ({tabChange}: any) => {
                   {label: 'Expense', value: 'expense'},
                 ]}
                 style={styles.dropdown}
-                dropDownContainerStyle={[
-                  styles.dropdownContainer,
-                  {zIndex: 2000},
-                ]}
+                dropDownContainerStyle={styles.dropdownContainer}
                 placeholder="Filter by Type"
                 textStyle={styles.dropdownText}
                 listMode="SCROLLVIEW"
+              />
+            </View>
+          </View>
+
+          {/* Date Pickers */}
+          <View style={[styles.dropdownRow, {zIndex: 1000, marginTop: 10}]}>
+            <View style={{flex: 1}}>
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => setOpenFromDate(true)}>
+                <Text style={styles.dateInputText}>
+                  {fromDate
+                    ? fromDate.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : new Date().toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                </Text>
+              </TouchableOpacity>
+              <DatePicker
+                modal
+                open={openFromDate}
+                date={fromDate || new Date()}
+                mode="date"
+                onConfirm={date => {
+                  setOpenFromDate(false);
+                  setFromDate(date);
+                }}
+                onCancel={() => setOpenFromDate(false)}
+              />
+            </View>
+
+            <View style={{flex: 1}}>
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => setOpenToDate(true)}>
+                <Text style={styles.dateInputText}>
+                  {toDate
+                    ? toDate.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : new Date().toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                </Text>
+              </TouchableOpacity>
+              <DatePicker
+                modal
+                open={openToDate}
+                date={toDate || new Date()}
+                mode="date"
+                onConfirm={date => {
+                  setOpenToDate(false);
+                  setToDate(date);
+                }}
+                onCancel={() => setOpenToDate(false)}
               />
             </View>
           </View>
@@ -163,6 +256,77 @@ const AllTxns = ({tabChange}: any) => {
           contentContainerStyle={[styles.listContent]}
         />
       </View>
+
+      <Portal>
+        <Dialog
+          visible={detailsModalVisible}
+          onDismiss={closeDetailsModal}
+          style={styles.detailsModal}>
+          <Dialog.Title style={styles.detailsHeading}>
+            Transaction Details
+          </Dialog.Title>
+          <Dialog.Content>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailSubHeading}>Type:</Text>
+              <Text style={[styles.detailValue, {fontWeight: '600'}]}>
+                {selectedTransaction?.type.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailSubHeading}>Date:</Text>
+              <Text style={styles.detailValue}>
+                {selectedTransaction?.date
+                  ? new Date(selectedTransaction.date).toLocaleDateString(
+                      'en-US',
+                      {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      },
+                    )
+                  : ''}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailSubHeading}>Amount:</Text>
+              <Text
+                style={[
+                  styles.detailValue,
+                  {
+                    color:
+                      selectedTransaction?.type === 'income'
+                        ? '#1F8A70'
+                        : '#D9534F',
+                  },
+                ]}>
+                {getCurrencySymbol()} {selectedTransaction?.amount}/-
+              </Text>
+            </View>
+            <View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailSubHeading}>Category:</Text>
+                <Text style={styles.detailValue}>
+                  {selectedTransaction?.category}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailSubHeading}>Description:</Text>
+                <Text style={styles.detailValue}>
+                  {selectedTransaction?.description}
+                </Text>
+              </View>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions style={styles.dialogActions}>
+            <TouchableOpacity
+              onPress={() => closeDetailsModal()}
+              style={styles.closeBtn}>
+              <Text style={styles.closebtnTxt}>Close</Text>
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
@@ -220,10 +384,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     marginTop: 20,
+    paddingBottom: 0, // Add this
   },
-  filterSection: {
-    marginBottom: 30,
-  },
+  filterSection: {},
   searchInput: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
@@ -241,18 +404,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
+    marginHorizontal: 10,
   },
   dropdown: {
-    flex: 1,
     backgroundColor: '#FFFFFF',
     borderColor: '#E0E0E0',
     borderRadius: 10,
     minHeight: 45,
-    width: '98%',
   },
   dropdownContainer: {
     borderColor: '#E0E0E0',
     borderRadius: 10,
+    zIndex: 2000,
   },
   dropdownText: {
     fontSize: 14,
@@ -261,7 +424,7 @@ const styles = StyleSheet.create({
   transactionItem: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    padding: 16,
+    padding: 15,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -305,11 +468,76 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   headingText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dateInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    height: 45,
+    justifyContent: 'center',
+  },
+  dateInputText: {
+    color: '#333',
+    fontSize: 14,
+  },
+
+  // Modal Styles
+  detailsModal: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginHorizontal: 10,
+  },
+  detailsHeading: {
+    color: '#444',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    flexWrap: 'wrap',
+  },
+  detailSubHeading: {
+    fontWeight: 'bold',
+    color: '#555',
+    fontSize: 14,
+  },
+  detailValue: {
+    fontSize: 12,
+    color: '#777',
+  },
+  dialogActions: {
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  closeBtn: {
+    backgroundColor: '#1F615C',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  closebtnTxt: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 
