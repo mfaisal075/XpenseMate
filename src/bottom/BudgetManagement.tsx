@@ -6,19 +6,38 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  FlatList,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {openDatabase} from '../../database';
 import Toast from 'react-native-toast-message';
+import {useTransactionContext} from '../components/TransactionContext';
+import {useCurrency} from '../components/CurrencyContext';
+import {Dialog, Portal} from 'react-native-paper';
 
 const BudgetManagement = ({navigateToSetting}: any) => {
+  const {
+    monthlyBudgets,
+    fetchMonthlyBudgets,
+    addMonthlyBudget,
+    deleteMonthlyBudget,
+    updateMonthlyBudget,
+  } = useTransactionContext();
+  const {getCurrencySymbol} = useCurrency();
   const [isBudgetModalVisible, setBudgetModalVisible] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<{
+    id: number;
+    budget: number;
+  } | null>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [budgetToDelete, setBudgetToDelete] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   const months = [
     'January',
@@ -35,77 +54,71 @@ const BudgetManagement = ({navigateToSetting}: any) => {
     'December',
   ];
 
-  const handleAddMonthlyBudget = async () => {
+  const handleSaveBudget = async () => {
     if (!monthlyBudget || isNaN(Number(monthlyBudget))) {
       Toast.show({
         type: 'error',
         text1: 'Invalid Input',
-        text2: 'Please enter a valid budget amount.',
-        visibilityTime: 2000,
+        text2: 'Please enter valid amount',
       });
       return;
     }
+
     try {
-      const db = await openDatabase();
-      let isBudgetExists = false;
+      await addMonthlyBudget(
+        selectedMonth + 1,
+        selectedYear,
+        parseFloat(monthlyBudget),
+      );
+      setBudgetModalVisible(false);
+      setMonthlyBudget('');
+    } catch (error) {
+      console.log('Error saving budget:', error);
+    }
+  };
 
-      await db.transaction(async tx => {
-        const results = await new Promise<any>((resolve, reject) => {
-          tx.executeSql(
-            'SELECT * FROM monthly_budget WHERE month = ? AND year = ?',
-            [selectedMonth + 1, selectedYear],
-            (_, result) => resolve(result),
-            (_, error) => reject(error),
-          );
-        });
-
-        if (results.rows.length > 0) {
-          isBudgetExists = true;
-        }
+  const handleEditBudget = async () => {
+    if (!monthlyBudget || isNaN(Number(monthlyBudget))) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Input',
+        text2: 'Please enter valid amount',
       });
+      return;
+    }
 
-      if (isBudgetExists) {
+    try {
+      if (selectedBudget) {
+        await updateMonthlyBudget(selectedBudget.id, parseFloat(monthlyBudget));
+      } else {
         Toast.show({
-          type: 'info',
-          text1: 'Budget Exists',
-          text2: 'A budget for this month is already added.',
-          visibilityTime: 2000,
+          type: 'error',
+          text1: 'Error',
+          text2: 'No budget selected for update',
         });
         return;
       }
-
-      await db.transaction(async tx => {
-        tx.executeSql(
-          'INSERT INTO monthly_budget (month, year, budget, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-          [
-            selectedMonth + 1,
-            selectedYear,
-            parseFloat(monthlyBudget),
-            'Y',
-            new Date().toISOString(),
-            new Date().toISOString(),
-          ],
-        );
-      });
-
+      setIsEditModalVisible(false);
+      setMonthlyBudget('');
+      setSelectedBudget(null);
+      fetchMonthlyBudgets();
       Toast.show({
         type: 'success',
-        text1: 'Budget Added',
-        text2: 'Monthly budget has been successfully added.',
-        visibilityTime: 2000,
+        text1: 'Budget Updated',
+        text2: 'Monthly budget has been updated successfully',
       });
     } catch (error) {
-      console.error('Error adding monthly budget:', error);
+      console.log('Error updating budget:', error);
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'An error occurred while adding the budget.',
-        visibilityTime: 2000,
+        text1: 'Update Failed',
+        text2: 'Failed to update budget',
       });
     }
   };
 
   useEffect(() => {
+    fetchMonthlyBudgets();
     const backAction = () => {
       navigateToSetting();
       return true;
@@ -117,7 +130,53 @@ const BudgetManagement = ({navigateToSetting}: any) => {
     );
 
     return () => backHandler.remove();
-  }, []);
+  }, [fetchMonthlyBudgets]);
+
+  const BudgetCard = ({item}: any) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text
+          style={{
+            color: '#1B5C58',
+            fontSize: 16,
+            fontWeight: '600',
+          }}>
+          {new Date(item.year, item.month).toLocaleString('default', {
+            month: 'long',
+            year: 'numeric',
+          })}
+        </Text>
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedBudget(item);
+              setSelectedMonth(item.month - 1); // Convert to 0-based index
+              setSelectedYear(item.year);
+              setMonthlyBudget(item.budget.toString());
+              setIsEditModalVisible(true);
+            }}
+            style={styles.actionButton}>
+            <Icon name="pencil" size={20} color="#1B5C58" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setBudgetToDelete(item.id);
+              setDeleteDialogVisible(true);
+            }}
+            style={styles.actionButton}>
+            <Icon name="delete" size={20} color="#D9534F" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.budgetText}>
+          {getCurrencySymbol()}
+          {item.budget.toFixed(2)}
+        </Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -156,6 +215,17 @@ const BudgetManagement = ({navigateToSetting}: any) => {
             <Icon name="chevron-right" size={24} color="#1B5C58" />
           </TouchableOpacity>
         </View>
+
+        {/* Monthly budgets cards */}
+        <FlatList
+          data={monthlyBudgets}
+          renderItem={BudgetCard}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No budgets set yet</Text>
+          }
+        />
       </View>
 
       {/* Add Budget Modal */}
@@ -163,11 +233,22 @@ const BudgetManagement = ({navigateToSetting}: any) => {
         visible={isBudgetModalVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setBudgetModalVisible(false)}>
+        onRequestClose={() => {
+          setBudgetModalVisible(false);
+          setMonthlyBudget('');
+          setSelectedMonth(new Date().getMonth());
+          setSelectedYear(new Date().getFullYear());
+        }}>
         <TouchableOpacity
           style={styles.modalBackdrop}
           activeOpacity={1}
-          onPressOut={() => setBudgetModalVisible(false)}>
+          onPressOut={() => {
+            setBudgetModalVisible(false);
+            setMonthlyBudget('');
+            setSelectedMonth(new Date().getMonth());
+            setSelectedYear(new Date().getFullYear());
+          }}>
+          <Toast />
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Set Monthly Budget</Text>
 
@@ -195,17 +276,19 @@ const BudgetManagement = ({navigateToSetting}: any) => {
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setBudgetModalVisible(false)}>
+                onPress={() => {
+                  setBudgetModalVisible(false);
+                  setMonthlyBudget('');
+                  setSelectedMonth(new Date().getMonth());
+                  setSelectedYear(new Date().getFullYear());
+                }}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => {
-                  if (monthlyBudget && !isNaN(Number(monthlyBudget))) {
-                    // Handle save logic here
-                    setBudgetModalVisible(false);
-                  }
+                  handleSaveBudget();
                 }}>
                 <Text style={styles.saveButtonText}>Save Budget</Text>
               </TouchableOpacity>
@@ -265,6 +348,136 @@ const BudgetManagement = ({navigateToSetting}: any) => {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Delete Budget Confirmation Dialog */}
+      <Portal>
+        <Toast />
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+          style={styles.deleteDialog}>
+          <Dialog.Title style={styles.deleteDialogTitle}>
+            <View style={styles.deleteHeader}>
+              <Icon
+                name="delete-alert"
+                size={32}
+                color="#D9534F"
+                style={styles.deleteIcon}
+              />
+              <Text style={styles.deleteTitleText}>Delete Budget</Text>
+            </View>
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.deleteDialogText}>
+              Are you sure you want to delete this budget? This action cannot be
+              undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <TouchableOpacity
+              onPress={() => setDeleteDialogVisible(false)}
+              style={{
+                backgroundColor: '#E0E0E0',
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                marginHorizontal: 8,
+                minWidth: 80,
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#000', fontSize: 14, fontWeight: '600'}}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={async () => {
+                try {
+                  if (budgetToDelete !== null) {
+                    await deleteMonthlyBudget(budgetToDelete);
+                  }
+                  await fetchMonthlyBudgets();
+                  setDeleteDialogVisible(false);
+                } catch (error) {
+                  console.log('Error deleting budget:', error);
+                }
+              }}
+              style={{
+                backgroundColor: '#D9534F',
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                marginHorizontal: 8,
+                minWidth: 80,
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#fff', fontSize: 14, fontWeight: '600'}}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Edit Budget Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setIsEditModalVisible(false);
+          setMonthlyBudget('');
+          setSelectedBudget(null);
+        }}>
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPressOut={() => {
+            setIsEditModalVisible(false);
+            setMonthlyBudget('');
+            setSelectedBudget(null);
+          }}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Edit Budget</Text>
+
+            {/* Disabled Month/Year Picker */}
+            <View style={styles.monthPickerButton}>
+              <Text style={styles.monthPickerText}>
+                {months[selectedMonth]} {selectedYear}
+              </Text>
+              <Icon name="calendar-month" size={20} color="#1B5C58" />
+            </View>
+
+            {/* Budget Input */}
+            <TextInput
+              placeholder="Enter budget amount"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
+              value={monthlyBudget}
+              onChangeText={setMonthlyBudget}
+              style={styles.budgetInput}
+            />
+
+            {/* Action Buttons */}
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setIsEditModalVisible(false);
+                  setMonthlyBudget('');
+                  setSelectedBudget(null);
+                }}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleEditBudget}>
+                <Text style={styles.saveButtonText}>Update Budget</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -488,6 +701,84 @@ const styles = StyleSheet.create({
   },
   selectedMonthText: {
     color: 'white',
+  },
+
+  //Budegt cards styles
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    padding: 4,
+  },
+  cardBody: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+  budgetText: {
+    color: '#438883',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  listContainer: {
+    paddingBottom: 20,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 20,
+    fontSize: 14,
+  },
+
+  //Delete dialog styles
+  deleteHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteIcon: {
+    marginBottom: 8,
+  },
+  deleteTitleText: {
+    color: '#1B5C58',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  deleteDialog: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  deleteDialogTitle: {
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
+    textAlign: 'center',
+  },
+  deleteDialogText: {
+    color: '#666',
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginTop: 0,
   },
 });
 

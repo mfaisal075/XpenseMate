@@ -660,6 +660,38 @@ const Wallet = ({tabChange}: any) => {
       return;
     }
 
+    if (!isIncome) {
+      try {
+        const db = await openDatabase();
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth() + 1; // Adjust for SQLite 1-12 format
+        const currentYear = currentDate.getFullYear();
+
+        const [budgetCheck] = await db.executeSql(
+          `SELECT id FROM monthly_budget 
+           WHERE month = ? AND year = ?`,
+          [currentMonth, currentYear],
+        );
+
+        if (budgetCheck.rows.length === 0) {
+          Toast.show({
+            type: 'error',
+            text1: 'Budget Required',
+            text2: "Please set current month's budget before adding expenses",
+          });
+          return;
+        }
+      } catch (error) {
+        console.log('Budget check error:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to verify budget',
+        });
+        return;
+      }
+    }
+
     if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
       Toast.show({
         type: 'error',

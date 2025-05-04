@@ -13,12 +13,21 @@ interface DataContextProps {
   incomeCategories: Categories[];
   expenseCategories: Categories[];
   openingBalance: OpeningBalance[];
+  monthlyBudgets: any[];
+  fetchMonthlyBudgets: () => Promise<void>;
   fetchOpeningBalance: () => Promise<void>;
   setOpeningBalance: React.Dispatch<React.SetStateAction<OpeningBalance[]>>;
   fetchTransactions: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   exportToExcel: () => Promise<void>;
   importDataFromExcel: () => Promise<void>;
+  addMonthlyBudget: (
+    month: number,
+    year: number,
+    budget: number,
+  ) => Promise<void>;
+  deleteMonthlyBudget: (id: number) => Promise<void>;
+  updateMonthlyBudget: (id: number, budget: number) => Promise<void>;
 }
 
 export const TransactionContext = React.createContext<
@@ -35,6 +44,7 @@ export const TransactionProvider = ({
   const [incomeCategories, setIncomeCategories] = useState<Categories[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Categories[]>([]);
   const [openingBalance, setOpeningBalance] = useState<OpeningBalance[]>([]);
+  const [monthlyBudgets, setMonthlyBudgets] = useState<any[]>([]);
 
   const exportDataToExcel = async () => {
     try {
@@ -74,11 +84,24 @@ export const TransactionProvider = ({
       const openingBalanceSheet =
         XLSX.utils.json_to_sheet(exportOpeningBalance);
 
+      // Prepare Monthly Budgets sheet
+      const exportMonthlyBudgets = monthlyBudgets.map(mb => ({
+        ID: mb.id,
+        Month: mb.month,
+        Year: mb.year,
+        Budget: mb.budget,
+        Status: mb.status,
+        CreatedAt: mb.created_at,
+        UpdatedAt: mb.updated_at,
+      }));
+      const monthlyBudgetSheet = XLSX.utils.json_to_sheet(exportMonthlyBudgets);
+
       // Create workbook and append both sheets
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, transactionSheet, 'Transactions');
       XLSX.utils.book_append_sheet(wb, categorySheet, 'Categories');
       XLSX.utils.book_append_sheet(wb, openingBalanceSheet, 'Opening Balance');
+      XLSX.utils.book_append_sheet(wb, monthlyBudgetSheet, 'Monthly Budgets');
 
       const wbout = XLSX.write(wb, {type: 'binary', bookType: 'xlsx'});
       const path = `${
@@ -115,19 +138,20 @@ export const TransactionProvider = ({
 
       db.transaction(
         tx => {
+          // 1. Import Categories
           const categorySheet = workbook.Sheets['Categories'];
           if (categorySheet) {
             const categoryData: any[] = XLSX.utils.sheet_to_json(categorySheet);
-
             categoryData.forEach(item => {
               tx.executeSql(
-                `INSERT OR IGNORE INTO categories (id, name, type, image, budget, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT OR IGNORE INTO categories (id, name, type, image, budget, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   item.ID,
                   item.Name,
                   item.Type,
                   item.Image ?? null,
                   item.Budget,
+                  item.Status ?? 'Y', // Default to 'Y'
                   item.CreatedAt ?? new Date().toISOString(),
                   item.UpdatedAt ?? new Date().toISOString(),
                 ],
@@ -135,21 +159,22 @@ export const TransactionProvider = ({
             });
           }
 
-          // 2. Import Transactions (from "Transactions" sheet)
+          // 2. Import Transactions
           const transactionSheet = workbook.Sheets['Transactions'];
           if (transactionSheet) {
             const transactionData: any[] =
               XLSX.utils.sheet_to_json(transactionSheet);
-
             transactionData.forEach(item => {
               tx.executeSql(
-                `INSERT OR IGNORE INTO transactions (id, amount, categoryType, category, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT OR IGNORE INTO transactions (id, amount, categoryType, category, description, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                   item.ID,
                   item.Amount,
                   item.Type,
                   item.Category,
                   item.Description,
+                  item.Status ?? 'Y', // Default to 'Y'
+                  item.Date ?? new Date().toISOString(),
                   item.CreatedAt ?? new Date().toISOString(),
                   item.UpdatedAt ?? new Date().toISOString(),
                 ],
@@ -162,7 +187,6 @@ export const TransactionProvider = ({
           if (openingBalanceSheet) {
             const openingBalanceData: any[] =
               XLSX.utils.sheet_to_json(openingBalanceSheet);
-
             openingBalanceData.forEach(item => {
               tx.executeSql(
                 `INSERT OR REPLACE INTO opening_balance (id, amount, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
@@ -170,6 +194,27 @@ export const TransactionProvider = ({
                   item.ID,
                   item.Amount,
                   item.Date,
+                  item.CreatedAt ?? new Date().toISOString(),
+                  item.UpdatedAt ?? new Date().toISOString(),
+                ],
+              );
+            });
+          }
+
+          // 4. Import Monthly Budgets
+          const monthlyBudgetSheet = workbook.Sheets['Monthly Budgets'];
+          if (monthlyBudgetSheet) {
+            const monthlyBudgetData: any[] =
+              XLSX.utils.sheet_to_json(monthlyBudgetSheet);
+            monthlyBudgetData.forEach(item => {
+              tx.executeSql(
+                `INSERT OR REPLACE INTO monthly_budget (id, month, year, budget, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  item.ID,
+                  item.Month,
+                  item.Year,
+                  item.Budget,
+                  item.Status ?? 'active', // Default to 'active'
                   item.CreatedAt ?? new Date().toISOString(),
                   item.UpdatedAt ?? new Date().toISOString(),
                 ],
@@ -188,6 +233,8 @@ export const TransactionProvider = ({
         () => {
           fetchTransactions();
           fetchCategories();
+          fetchOpeningBalance();
+          fetchMonthlyBudgets();
           Toast.show({
             type: 'success',
             text1: 'Import Successful',
@@ -307,10 +354,189 @@ export const TransactionProvider = ({
     }
   };
 
+  const fetchMonthlyBudgets = async () => {
+    try {
+      const db = await openDatabase();
+      db.transaction(tx => {
+        tx.executeSql(
+          `SELECT * FROM monthly_budget ORDER BY year DESC, month DESC`,
+          [],
+          (_, results) => {
+            const budgets = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              budgets.push(results.rows.item(i));
+            }
+            setMonthlyBudgets(budgets);
+          },
+          (_, error) => console.error('Error fetching monthly budgets:', error),
+        );
+      });
+    } catch (error) {
+      console.error('Error fetching monthly budgets:', error);
+    }
+  };
+
+  const addMonthlyBudget = async (
+    month: number,
+    year: number,
+    budget: number,
+  ) => {
+    try {
+      const db = await openDatabase();
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+
+      // First check for existing budget
+      const [existing] = await db.executeSql(
+        `SELECT id FROM monthly_budget 
+         WHERE month = ? AND year = ?`,
+        [month, year],
+      );
+
+      if (existing.rows.length > 0) {
+        throw new Error('BUDGET_EXISTS'); // Use specific error code
+      }
+
+      // Insert new budget
+      await db.executeSql(
+        `INSERT INTO monthly_budget (
+          month, 
+          year, 
+          budget, 
+          status, 
+          created_at, 
+          updated_at
+        ) VALUES (?, ?, ?, 'active', datetime('now'), datetime('now'))`,
+        [month, year, budget],
+      );
+
+      // Show success message
+      const monthName = new Date(year, month - 1).toLocaleString('default', {
+        month: 'long',
+      });
+      Toast.show({
+        type: 'success',
+        text1:
+          month === currentMonth && year === currentYear
+            ? 'Current Month Budget Added'
+            : 'Budget Added',
+        text2: `Budget for ${monthName} ${year} has been set`,
+      });
+
+      // Refresh budgets list
+      const [results] = await db.executeSql(
+        `SELECT * FROM monthly_budget 
+         ORDER BY year DESC, month DESC`,
+      );
+
+      const newBudgets = [];
+      for (let i = 0; i < results.rows.length; i++) {
+        newBudgets.push(results.rows.item(i));
+      }
+      setMonthlyBudgets(newBudgets);
+    } catch (error) {
+      console.error('Error adding monthly budget:', error);
+
+      // Handle error type safely
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('BUDGET_EXISTS')) {
+        Toast.show({
+          type: 'error',
+          text1: 'Budget Add Failed',
+          text2: 'Budget already exists for selected month',
+        });
+      }
+
+      throw error;
+    }
+  };
+
+  const deleteMonthlyBudget = async (id: number) => {
+    try {
+      const db = await openDatabase();
+
+      // First get the budget's month and year
+      const [budgetResult] = await db.executeSql(
+        `SELECT month, year FROM monthly_budget WHERE id = ?`,
+        [id],
+      );
+
+      if (budgetResult.rows.length === 0) {
+        throw new Error('Budget not found');
+      }
+
+      const {month, year} = budgetResult.rows.item(0);
+
+      // Check for existing transactions in this month/year
+      const [txnResult] = await db.executeSql(
+        `SELECT COUNT(*) as count FROM transactions 
+         WHERE strftime('%m', date) = ?
+         AND strftime('%Y', date) = ?
+         AND categoryType = 'expense'
+         AND status = 'Y'`,
+        [month.toString().padStart(2, '0'), year.toString()],
+      );
+
+      const transactionCount = txnResult.rows.item(0).count;
+
+      if (transactionCount > 0) {
+        throw new Error('BUDGET_HAS_TRANSACTIONS');
+      }
+
+      await db.executeSql(`DELETE FROM monthly_budget WHERE id = ?`, [id]);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Budget Deleted',
+        text2: 'Monthly budget has been deleted successfully',
+      });
+
+      await fetchMonthlyBudgets();
+    } catch (error) {
+      console.error('Error deleting monthly budget:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('BUDGET_HAS_TRANSACTIONS')) {
+          Toast.show({
+            type: 'error',
+            text1: 'Cannot Delete Budget',
+            text2: 'This budget month has existing transactions',
+          });
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Delete Failed',
+            text2: 'Failed to delete budget',
+          });
+        }
+      }
+
+      throw error;
+    }
+  };
+
+  const updateMonthlyBudget = async (id: number, budget: number) => {
+    try {
+      const db = await openDatabase();
+      await db.executeSql(
+        `UPDATE monthly_budget 
+         SET budget = ?, updated_at = datetime('now')
+         WHERE id = ?`,
+        [budget, id],
+      );
+      await fetchMonthlyBudgets();
+    } catch (error) {
+      console.error('Error updating monthly budget:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
     fetchOpeningBalance();
+    fetchMonthlyBudgets();
   }, []);
 
   return (
@@ -327,6 +553,11 @@ export const TransactionProvider = ({
         openingBalance,
         fetchOpeningBalance,
         setOpeningBalance,
+        monthlyBudgets,
+        fetchMonthlyBudgets,
+        addMonthlyBudget,
+        deleteMonthlyBudget,
+        updateMonthlyBudget,
       }}>
       {children}
     </TransactionContext.Provider>
