@@ -90,6 +90,7 @@ const Login = ({navigation}: any) => {
         type: 'success',
         text1: 'Success',
         text2: 'Login successful!',
+        visibilityTime: 2000, // 2 seconds timing
       });
 
       navigation.replace('Home');

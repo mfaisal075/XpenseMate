@@ -104,8 +104,8 @@ const Wallet = ({tabChange}: any) => {
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [startDatePickerVisible, setStartDatePickerVisible] = useState(false);
   const [endDatePickerVisible, setEndDatePickerVisible] = useState(false);
   const [selectedReportCategories, setSelectedReportCategories] = useState<
@@ -651,6 +651,7 @@ const Wallet = ({tabChange}: any) => {
       ? incomeForm.description
       : expenseForm.description;
 
+    // Validation checks
     if (!category || !amount || !date || !description) {
       Toast.show({
         type: 'error',
@@ -660,15 +661,27 @@ const Wallet = ({tabChange}: any) => {
       return;
     }
 
-    if (!isIncome) {
-      try {
-        const db = await openDatabase();
-        const currentDate = new Date();
-        const currentMonth = currentDate.getMonth() + 1; // Adjust for SQLite 1-12 format
-        const currentYear = currentDate.getFullYear();
+    if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid input',
+        text2: 'Please enter a valid amount',
+      });
+      return;
+    }
 
+    try {
+      const db = await openDatabase();
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      const amountValue = parseFloat(amount);
+
+      // Expense-specific checks
+      if (!isIncome) {
+        // 1. Check if budget exists
         const [budgetCheck] = await db.executeSql(
-          `SELECT id FROM monthly_budget 
+          `SELECT budget FROM monthly_budget 
            WHERE month = ? AND year = ?`,
           [currentMonth, currentYear],
         );
@@ -681,37 +694,54 @@ const Wallet = ({tabChange}: any) => {
           });
           return;
         }
-      } catch (error) {
-        console.log('Budget check error:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Failed to verify budget',
-        });
-        return;
+
+        // 2. Get current budget and expenses
+        const budgetAmount = parseFloat(budgetCheck.rows.item(0).budget);
+        const [expenseResult] = await db.executeSql(
+          `SELECT COALESCE(SUM(amount), 0) as total 
+           FROM transactions 
+           WHERE categoryType = 'expense'
+           AND strftime('%m', date) = ?
+           AND strftime('%Y', date) = ?`,
+          [currentMonth.toString().padStart(2, '0'), currentYear.toString()],
+        );
+
+        const currentExpenses =
+          parseFloat(expenseResult.rows.item(0).total) || 0;
+        const remainingBudget = budgetAmount - currentExpenses;
+        const potentialTotal = currentExpenses + amountValue;
+
+        // 3. Check budget limit
+        if (potentialTotal > budgetAmount) {
+          const exceedingAmount = potentialTotal - budgetAmount;
+          Toast.show({
+            type: 'error',
+            text1: 'Budget Exceeded',
+            text2: `You can only spend ${getCurrencySymbol()}${Math.max(
+              remainingBudget,
+              0,
+            ).toFixed(
+              1,
+            )} more. This exceeds by ${getCurrencySymbol()}${exceedingAmount.toFixed(
+              1,
+            )}`,
+          });
+          return;
+        }
       }
-    }
 
-    if (!/^\d+(\.\d{1,2})?$/.test(amount)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid input',
-        text2: 'Please enter a valid amount',
-      });
-      return;
-    }
+      // Add transaction
+      const addDate = date.toISOString().split('T')[0];
+      const createdDate = new Date().toISOString();
 
-    // Add transaction to the database
-    const db = await openDatabase();
-    const addDate = date.toISOString().split('T')[0];
-    const createdDate = new Date().toISOString().split('T')[0];
-    try {
       await db.transaction(async tx => {
         await tx.executeSql(
-          `INSERT INTO transactions (amount, categoryType, category, description, status, date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO transactions 
+          (amount, categoryType, category, description, status, date, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            amount,
-            type.trim(),
+            amountValue, // Store as number
+            type,
             category.trim(),
             description,
             'Y',
@@ -722,18 +752,14 @@ const Wallet = ({tabChange}: any) => {
         );
       });
 
-      if (type === 'expense') {
-        await checkBudgetExceed(category, getCurrencySymbol());
-      }
-
+      // Success handling
       Toast.show({
         type: 'success',
         text1: `${isIncome ? 'Income' : 'Expense'} Added`,
-        text2: `Your ${
-          isIncome ? 'income' : 'expense'
-        } entry has been added successfully!`,
+        text2: `${isIncome ? 'Income' : 'Expense'} added successfully!`,
       });
 
+      // Reset forms
       if (isIncome) {
         setIncomeCategory('');
         setIncomeForm(initialFormState);
@@ -744,9 +770,10 @@ const Wallet = ({tabChange}: any) => {
         setExpenseModalVisible(false);
       }
 
-      fetchTransactions(); // Fetch transactions again to update the list
+      // Refresh data
+      fetchTransactions();
     } catch (error) {
-      console.log(`Error in adding ${type}`, error);
+      console.error(`Transaction error: ${error}`);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -946,6 +973,7 @@ const Wallet = ({tabChange}: any) => {
       });
       return;
     }
+
     if (selectedReportCategories.length === 0) {
       Toast.show({
         type: 'error',
@@ -954,6 +982,7 @@ const Wallet = ({tabChange}: any) => {
       });
       return;
     }
+
     if (!startDate || !endDate) {
       Toast.show({
         type: 'error',
@@ -962,11 +991,8 @@ const Wallet = ({tabChange}: any) => {
       });
       return;
     }
-    if (
-      startDate &&
-      endDate &&
-      new Date(startDate).getTime() > new Date(endDate).getTime()
-    ) {
+
+    if (new Date(startDate).getTime() > new Date(endDate).getTime()) {
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -974,80 +1000,153 @@ const Wallet = ({tabChange}: any) => {
       });
       return;
     }
-    const totalIncome = transactions
-      .filter(transaction => transaction.type === 'income')
-      .reduce(
-        (sum, transaction) => sum + parseFloat(transaction.amount.toString()),
+
+    const hasIncome = transactions.some(t => t.type === 'income');
+    const hasExpense = transactions.some(t => t.type === 'expense');
+    const reportTitle =
+      hasIncome && hasExpense
+        ? 'Income & Expense Report'
+        : hasIncome
+        ? 'Income Report'
+        : 'Expense Report';
+
+    const fromDate = new Date(startDate);
+    const toDate = new Date(endDate);
+    const fromMonth = fromDate.toLocaleString('default', {month: 'long'});
+    const toMonth = toDate.toLocaleString('default', {month: 'long'});
+    const monthDisplay =
+      fromMonth === toMonth ? fromMonth : `${fromMonth} - ${toMonth}`;
+
+    const incomeTransactions = transactions.filter(t => t.type === 'income');
+    const expenseTransactions = transactions.filter(t => t.type === 'expense');
+
+    const renderTable = (data: Transaction[], type: string) => {
+      const total = data.reduce(
+        (sum, t) => sum + parseFloat(t.amount.toString()),
         0,
       );
 
-    const totalExpense = transactions
-      .filter(transaction => transaction.type === 'expense')
-      .reduce(
-        (sum, transaction) => sum + parseFloat(transaction.amount.toString()),
-        0,
-      );
+      return `
+          <h2 style="color: ${type === 'income' ? '#2E7D32' : '#C62828'};">
+            ${
+              type === 'income' ? 'Income Transactions' : 'Expense Transactions'
+            }
+          </h2>
+          <table>
+            <tr>
+              <th>Sr</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Amount (Rs)</th>
+            </tr>
+            ${data
+              .map(
+                (t, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${t.description}</td>
+                <td>${t.category}</td>
+                <td>${new Date(t.date).toLocaleDateString()}</td>
+                <td>${t.amount.toFixed(2)}</td>
+              </tr>`,
+              )
+              .join('')}
+            <tr class="total-row">
+              <td colspan="4">Total ${
+                type === 'income' ? 'Income' : 'Expense'
+              }</td>
+              <td>${total.toFixed(2)}</td>
+            </tr>
+          </table>
+        `;
+    };
 
-    const savings = totalIncome - totalExpense;
+    const totalIncome = incomeTransactions.reduce(
+      (sum, t) => sum + parseFloat(t.amount.toString()),
+      0,
+    );
+    const totalExpense = expenseTransactions.reduce(
+      (sum, t) => sum + parseFloat(t.amount.toString()),
+      0,
+    );
+    const netBalance = totalIncome - totalExpense;
 
     const htmlContent = `
       <html>
         <head>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { text-align: center; color: #1F615C; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #1F615C; color: white; }
-            tr:nth-child(even) { background-color: #f2f2f2; }
-            .summary { margin-top: 20px; }
-            .summary div { margin-bottom: 10px; }
-            .summary span { font-weight: bold; }
-            .chart-container { text-align: center; margin-top: 20px; }
-          </style>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; color: #000; }
+          h2 { margin-top: 30px; color: #000; }
+          .info { margin-top: 10px; text-align: center; }
+          .info div { margin-bottom: 5px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #1F615C; color: white; }
+          tr:nth-child(even) { background-color: #f2f2f2; }
+          .total-row td { font-weight: bold; background-color: #f0f0f0; }
+          .summary table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+          }
+          .summary th, .summary td {
+          border: 1px solid #ddd;
+          padding: 10px;
+          text-align: center;
+          font-size: 16px;
+          }
+          .summary th {
+          background-color:rgb(2, 2, 2);
+          }
+        </style>
         </head>
         <body>
-          <h1>Transaction Report</h1>
+        <h1>${reportTitle}</h1>
+        <div class="info">
+          <div><strong>From:</strong> ${fromDate.toLocaleDateString()}</div>
+          <div><strong>To:</strong> ${toDate.toLocaleDateString()}</div>
+          <div><strong>Month(s):</strong> ${monthDisplay}</div>
+        </div>
+        ${hasIncome ? renderTable(incomeTransactions, 'income') : ''}
+        ${hasExpense ? renderTable(expenseTransactions, 'expense') : ''}
+        ${
+          hasIncome && hasExpense
+            ? `
           <div class="summary">
-            <div><span>Total Income:</span> Rs.${totalIncome.toFixed(2)}/-</div>
-            <div><span>Total Expense:</span> Rs.${totalExpense.toFixed(
-              2,
-            )}/-</div>
-            <div><span>Savings:</span> ${savings >= 0 ? '+' : '-'}Rs.${Math.abs(
-      savings,
-    ).toFixed(2)}/-</div>
-          </div>
+          <h2 style="margin-top: 40px;">Summary</h2>
           <table>
             <tr>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Description</th>
-              <th>Date</th>
+            <th>Total Income</th>
+            <th>Total Expense</th>
+            <th>Net Balance</th>
             </tr>
-            ${transactions
-              .map(
-                transaction => `
-              <tr>
-                <td>${transaction.type}</td>
-                <td>${transaction.category}</td>
-                <td>Rs.${transaction.amount}/-</td>
-                <td>${transaction.description}</td>
-                <td>${new Date(transaction.date).toLocaleDateString()}</td>
-              </tr>
-            `,
-              )
-              .join('')}
+            <tr>
+            <td style="color: #2E7D32;">Rs ${totalIncome.toFixed(2)}</td>
+            <td style="color: #C62828;">Rs ${totalExpense.toFixed(2)}</td>
+            <td style="font-weight: bold;">Rs ${netBalance.toFixed(2)}</td>
+            </tr>
           </table>
+          </div>
+        `
+            : ''
+        }
         </body>
       </html>
-    `;
+      `;
 
     try {
+      const timestamp = Date.now();
+      const pdfFileName = `FinanceData_${timestamp}.pdf`;
+      const pdfPath = `${RNFS.DownloadDirectoryPath}/${pdfFileName}`;
+
       const options = {
         html: htmlContent,
-        fileName: 'Transaction_Report',
-        directory: 'Documents',
+        fileName: `Transaction_Report_${timestamp}`,
+        directory: '', // Empty to use full custom path
+        base64: false,
+        path: pdfPath,
       };
 
       const file = await RNHTMLtoPDF.convert(options);
@@ -1056,10 +1155,13 @@ const Wallet = ({tabChange}: any) => {
       Toast.show({
         type: 'success',
         text1: 'Report Generated',
-        text2: `The report has been generated and saved to ${file.filePath}`,
+        text2: `Report saved to: ${pdfPath}`,
       });
 
       reportModalClose();
+      setSelectedFilter('All');
+      setStartDate(new Date());
+      setEndDate(new Date());
     } catch (error) {
       console.error('Error generating report:', error);
       Toast.show({
@@ -2120,7 +2222,12 @@ const Wallet = ({tabChange}: any) => {
         {/* Transaction Report Generation Modal */}
         <Dialog
           visible={reportVisible}
-          onDismiss={() => reportModalClose()}
+          onDismiss={() => {
+            reportModalClose();
+            setSelectedFilter('All');
+            setStartDate(new Date());
+            setEndDate(new Date());
+          }}
           style={styles.detailsModal}>
           <Dialog.Title style={styles.detailsHeading}>
             Generate Transaction Report
@@ -2243,6 +2350,14 @@ const Wallet = ({tabChange}: any) => {
               </View>
               <TouchableOpacity
                 onPress={() => {
+                  // Normalize start and end dates to cover full days
+                  const normalizedStartDate = startDate
+                    ? new Date(startDate.setHours(0, 0, 0, 0))
+                    : null;
+                  const normalizedEndDate = endDate
+                    ? new Date(endDate.setHours(23, 59, 59, 999))
+                    : null;
+
                   const filteredTransactions = transactions.filter(
                     transaction => {
                       const transactionDate = new Date(transaction.date);
@@ -2250,8 +2365,10 @@ const Wallet = ({tabChange}: any) => {
                         (selectedFilter === 'All' ||
                           transaction.type.toLowerCase() ===
                             selectedFilter.toLowerCase()) &&
-                        (!startDate || transactionDate >= startDate) &&
-                        (!endDate || transactionDate <= endDate) &&
+                        (!normalizedStartDate ||
+                          transactionDate >= normalizedStartDate) &&
+                        (!normalizedEndDate ||
+                          transactionDate <= normalizedEndDate) &&
                         (selectedReportCategories.length === 0 ||
                           selectedReportCategories.includes(
                             transaction.category,
@@ -2259,6 +2376,7 @@ const Wallet = ({tabChange}: any) => {
                       );
                     },
                   );
+
                   generateReport(filteredTransactions);
                 }}
                 style={[

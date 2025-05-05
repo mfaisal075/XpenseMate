@@ -19,8 +19,14 @@ import {useCurrency} from '../components/CurrencyContext';
 
 const Main = ({navigateToNotification, goToAllTxns}: any) => {
   const [name, setName] = useState('');
-  const {transactions, fetchTransactions, openingBalance, fetchOpeningBalance} =
-    useTransactionContext();
+  const {
+    transactions,
+    fetchTransactions,
+    openingBalance,
+    fetchOpeningBalance,
+    monthlyBudgets,
+    fetchMonthlyBudgets,
+  } = useTransactionContext();
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
@@ -54,6 +60,8 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
 
   useEffect(() => {
     fetchOpeningBalance();
+    fetchMonthlyBudgets();
+
     const backAction = () => {
       setShowExitDialog(true);
       return true;
@@ -126,6 +134,12 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(totalBalance);
+
+  const monthlyBudget =
+    monthlyBudgets.find(
+      b =>
+        Number(b.month) === currentMonth + 1 && Number(b.year) === currentYear,
+    )?.budget || 0;
 
   const renderItem = ({item}: any) => {
     // Function to format the date
@@ -465,23 +479,31 @@ const Main = ({navigateToNotification, goToAllTxns}: any) => {
               </View>
             </View>
 
+            {/* Current Month */}
+            <View style={styles.budgetSection}>
+              <Text style={styles.budgetLabel}>
+                {currentDate.toLocaleString('default', {month: 'long'})}{' '}
+                Overview
+              </Text>
+            </View>
+
             {/* Detailed Numbers */}
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetSubLabel}>Monthly Budget:</Text>
+              <Text style={[styles.budgetSubValue, {color: '#3498db'}]}>
+                {getCurrencySymbol()} {monthlyBudget.toFixed(1)}/-
+              </Text>
+            </View>
             <View style={styles.budgetRow}>
               <Text style={styles.budgetSubLabel}>Total Income:</Text>
               <Text style={[styles.budgetSubValue, {color: '#1F8A70'}]}>
-                {getCurrencySymbol()} {formattedIncome}/-{' '}
-                <Text style={{color: '#000'}}>
-                  ({currentDate.toLocaleString('default', {month: 'long'})})
-                </Text>
+                {getCurrencySymbol()} {formattedIncome}/-
               </Text>
             </View>
             <View style={styles.budgetRow}>
               <Text style={styles.budgetSubLabel}>Total Expenses:</Text>
               <Text style={[styles.budgetSubValue, {color: '#D9534F'}]}>
-                {getCurrencySymbol()} {formattedExpense}/-{' '}
-                <Text style={{color: '#000'}}>
-                  ({currentDate.toLocaleString('default', {month: 'long'})})
-                </Text>
+                {getCurrencySymbol()} {formattedExpense}/-
               </Text>
             </View>
           </Dialog.Content>
@@ -904,7 +926,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 0,
   },
   budgetSubLabel: {
     fontSize: 14,

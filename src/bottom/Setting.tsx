@@ -1,6 +1,7 @@
 import {
   BackHandler,
   Modal,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -101,104 +102,106 @@ const Setting = ({
         </View>
       </LinearGradient>
 
-      <View style={styles.bottomContainer}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>General Settings</Text>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => navigateToBudgetManagement()}>
-            <View style={styles.buttonContent}>
-              <Icon name="wallet" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Budget Management</Text>
-                <Text style={styles.buttonSubtitle}>
-                  Monthly spending limit
-                </Text>
+      <ScrollView>
+        <View style={styles.bottomContainer}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>General Settings</Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => navigateToBudgetManagement()}>
+              <View style={styles.buttonContent}>
+                <Icon name="wallet" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Budget Management</Text>
+                  <Text style={styles.buttonSubtitle}>
+                    Monthly spending limit
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setCurrencyModalVisible(true)}>
-            <View style={styles.buttonContent}>
-              <Icon name="cash-multiple" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Default Currency</Text>
-                <Text style={styles.buttonSubtitle}>
-                  {currency} -{' '}
-                  {currency === 'USD'
-                    ? 'US Dollar'
-                    : currency === 'INR'
-                    ? 'Indian Rupee'
-                    : 'Pakistani Rupee'}
-                </Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setCurrencyModalVisible(true)}>
+              <View style={styles.buttonContent}>
+                <Icon name="cash-multiple" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Default Currency</Text>
+                  <Text style={styles.buttonSubtitle}>
+                    {currency} -{' '}
+                    {currency === 'USD'
+                      ? 'US Dollar'
+                      : currency === 'INR'
+                      ? 'Indian Rupee'
+                      : 'Pakistani Rupee'}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setNotificationModalVisible(true)}>
-            <View style={styles.buttonContent}>
-              <Icon name="bell" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Notifications</Text>
-                <Text style={styles.buttonSubtitle}>
-                  {notificationEnabled ? 'Enabled' : 'Disabled'}{' '}
-                </Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setNotificationModalVisible(true)}>
+              <View style={styles.buttonContent}>
+                <Icon name="bell" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Notifications</Text>
+                  <Text style={styles.buttonSubtitle}>
+                    {notificationEnabled ? 'Enabled' : 'Disabled'}{' '}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Support</Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={navigateToContact}>
+              <View style={styles.buttonContent}>
+                <Icon name="help-circle" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Help & Support</Text>
+                  <Text style={styles.buttonSubtitle}>Contact our team</Text>
+                </View>
+              </View>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Data Management</Text>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={importDataFromExcel}>
+              <View style={styles.buttonContent}>
+                <Icon name="database-import" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Import Data</Text>
+                  <Text style={styles.buttonSubtitle}>
+                    Restore from backup file
+                  </Text>
+                </View>
+              </View>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuButton} onPress={exportToExcel}>
+              <View style={styles.buttonContent}>
+                <Icon name="database-export" size={24} color="#1B5C58" />
+                <View style={styles.buttonTextContainer}>
+                  <Text style={styles.buttonTitle}>Export Data</Text>
+                  <Text style={styles.buttonSubtitle}>Create backup file</Text>
+                </View>
+              </View>
+              <Icon name="chevron-right" size={24} color="#1B5C58" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={navigateToContact}>
-            <View style={styles.buttonContent}>
-              <Icon name="help-circle" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Help & Support</Text>
-                <Text style={styles.buttonSubtitle}>Contact our team</Text>
-              </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Management</Text>
-          <TouchableOpacity
-            style={styles.menuButton}
-            onPress={importDataFromExcel}>
-            <View style={styles.buttonContent}>
-              <Icon name="database-import" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Import Data</Text>
-                <Text style={styles.buttonSubtitle}>
-                  Restore from backup file
-                </Text>
-              </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuButton} onPress={exportToExcel}>
-            <View style={styles.buttonContent}>
-              <Icon name="database-export" size={24} color="#1B5C58" />
-              <View style={styles.buttonTextContainer}>
-                <Text style={styles.buttonTitle}>Export Data</Text>
-                <Text style={styles.buttonSubtitle}>Create backup file</Text>
-              </View>
-            </View>
-            <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      </ScrollView>
 
       {isCurrencyModalVisible && (
         <TouchableOpacity
