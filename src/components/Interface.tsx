@@ -30,3 +30,12 @@ export interface OpeningBalance {
   created_at: string;
   updated_at: string;
 }
+
+export interface Adjustment {
+  id: number;
+  amount: number;
+  date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}

@@ -141,7 +141,7 @@ const BudgetManagement = ({navigateToSetting}: any) => {
             fontSize: 16,
             fontWeight: '600',
           }}>
-          {new Date(item.year, item.month).toLocaleString('default', {
+          {new Date(item.year, item.month - 1).toLocaleString('default', {
             month: 'long',
             year: 'numeric',
           })}

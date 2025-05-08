@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -27,11 +26,6 @@ const Setting = ({
   const [isNotificationModalVisible, setNotificationModalVisible] =
     useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
-  const [isBudgetModalVisible, setBudgetModalVisible] = useState(false);
-  const [monthlyBudget, setMonthlyBudget] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const loadNotificationSetting = async () => {
     const enabled = await SettingsService.getNotificationSetting();
@@ -42,21 +36,6 @@ const Setting = ({
     setNotificationEnabled(value);
     await SettingsService.setNotificationSetting(value);
   };
-
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
 
   useEffect(() => {
     loadNotificationSetting();

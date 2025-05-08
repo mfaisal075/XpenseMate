@@ -75,7 +75,7 @@ const initialOpeningBalanceState: OpeningBalance = {
   balance: '',
 };
 
-const Wallet = ({tabChange}: any) => {
+const Wallet = ({tabChange, navigateToOBAdjustment}: any) => {
   const [open, setOpen] = useState(false);
   const {getCurrencySymbol} = useCurrency();
   const [typeOpen, setTypeOpen] = useState(false);
@@ -759,6 +759,8 @@ const Wallet = ({tabChange}: any) => {
         text2: `${isIncome ? 'Income' : 'Expense'} added successfully!`,
       });
 
+      if (!isIncome) checkBudgetExceed(category, getCurrencySymbol());
+
       // Reset forms
       if (isIncome) {
         setIncomeCategory('');
@@ -799,7 +801,9 @@ const Wallet = ({tabChange}: any) => {
     try {
       const [result] = await (
         await db
-      ).executeSql('SELECT COUNT(*) as count FROM opening_balance');
+      ).executeSql(
+        'SELECT COUNT(*) as count FROM opening_balance WHERE status = "OB"',
+      );
 
       if (result.rows.item(0).count > 0) {
         Toast.show({
@@ -812,8 +816,8 @@ const Wallet = ({tabChange}: any) => {
 
       (await db).transaction(async tx => {
         await tx.executeSql(
-          'INSERT INTO opening_balance (amount, date, created_at, updated_at) VALUES (?, ?, ?, ?)',
-          [opnBalanceForm.balance, date, createdDate, createdDate],
+          'INSERT INTO opening_balance (amount, date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+          [opnBalanceForm.balance, date, 'OB', createdDate, createdDate],
         );
       });
 
@@ -1347,6 +1351,26 @@ const Wallet = ({tabChange}: any) => {
                     style={styles.optionIcon}
                   />
                   <Text style={styles.optionText}>Opening Balance</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionButton}
+                onPress={() => {
+                  navigateToOBAdjustment();
+                  modalizeRef.current?.close();
+                }} // Empty function for no action
+              >
+                <View style={styles.optionContent}>
+                  <Icon
+                    name="scale-balance"
+                    size={24}
+                    color="#fff"
+                    style={styles.optionIcon}
+                  />
+                  <Text style={styles.optionText}>
+                    Opening Balance Adjustment
+                  </Text>
                 </View>
               </TouchableOpacity>
             </View>

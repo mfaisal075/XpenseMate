@@ -94,6 +94,7 @@ const initOpeningBalanceTable = async () => {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     amount TEXT NOT NULL,
                     date TEXT NOT NULL,
+                    status TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                     )`,
@@ -115,7 +116,6 @@ const initSettingsTable = async () => {
         setting_value TEXT
       );
     `);
-    console.log('Settings table initialized');
   } catch (error) {
     console.error('Error initializing settings table:', error);
     throw error;
@@ -136,9 +136,30 @@ const initMonthlyBudgetTable = async () => {
         updated_at TEXT NOT NULL
       );
     `);
-    console.log('Monthly budget table initialized');
   } catch (error) {
     console.error('Error initializing monthly budget table:', error);
+    throw error;
+  }
+};
+
+const initAdjustmentsTable = async () => {
+  try {
+    const db = await openDatabase();
+    await db.transaction(async tx => {
+      await tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS adjustments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          amount REAL NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY(id) REFERENCES opening_balance(id)
+        )`,
+      );
+    });
+  } catch (error) {
+    console.log('Error creating adjustments table', error);
     throw error;
   }
 };
@@ -151,4 +172,5 @@ export {
   initOpeningBalanceTable,
   initSettingsTable,
   initMonthlyBudgetTable,
+  initAdjustmentsTable,
 };

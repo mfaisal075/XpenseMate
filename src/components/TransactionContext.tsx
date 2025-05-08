@@ -1,6 +1,11 @@
 import {useContext, useEffect, useState} from 'react';
 import {openDatabase} from '../../database';
-import {Transaction, Categories, OpeningBalance} from '../components/Interface';
+import {
+  Transaction,
+  Categories,
+  OpeningBalance,
+  Adjustment,
+} from '../components/Interface';
 import React from 'react';
 import RNFS from 'react-native-fs';
 import XLSX from 'xlsx';
@@ -14,11 +19,13 @@ interface DataContextProps {
   expenseCategories: Categories[];
   openingBalance: OpeningBalance[];
   monthlyBudgets: any[];
+  adjustments: Adjustment[];
   fetchMonthlyBudgets: () => Promise<void>;
   fetchOpeningBalance: () => Promise<void>;
   setOpeningBalance: React.Dispatch<React.SetStateAction<OpeningBalance[]>>;
   fetchTransactions: () => Promise<void>;
   fetchCategories: () => Promise<void>;
+  fetchAdjustments: () => Promise<void>;
   exportToExcel: () => Promise<void>;
   importDataFromExcel: () => Promise<void>;
   addMonthlyBudget: (
@@ -45,6 +52,7 @@ export const TransactionProvider = ({
   const [expenseCategories, setExpenseCategories] = useState<Categories[]>([]);
   const [openingBalance, setOpeningBalance] = useState<OpeningBalance[]>([]);
   const [monthlyBudgets, setMonthlyBudgets] = useState<any[]>([]);
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
 
   const exportDataToExcel = async () => {
     try {
@@ -333,7 +341,7 @@ export const TransactionProvider = ({
       const db = await openDatabase();
       db.transaction(tx => {
         tx.executeSql(
-          'SELECT * FROM opening_balance LIMIT 1',
+          'SELECT * FROM opening_balance WHERE status = "OB" LIMIT 1',
           [],
           (_, result) => {
             const data: OpeningBalance[] = [];
@@ -532,11 +540,37 @@ export const TransactionProvider = ({
     }
   };
 
+  const fetchAdjustments = async () => {
+    try {
+      const db = await openDatabase();
+      db.transaction(tx => {
+        tx.executeSql(
+          `SELECT * FROM adjustments ORDER BY id DESC`,
+          [],
+          (_, results) => {
+            const data: Adjustment[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              data.push(results.rows.item(i));
+            }
+            setAdjustments(data);
+          },
+          (_, error) => {
+            console.error('Error fetching adjustments:', error);
+            return false;
+          },
+        );
+      });
+    } catch (error) {
+      console.error('Database error when fetching adjustments:', error);
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
     fetchCategories();
     fetchOpeningBalance();
     fetchMonthlyBudgets();
+    fetchAdjustments();
   }, []);
 
   return (
@@ -558,6 +592,8 @@ export const TransactionProvider = ({
         addMonthlyBudget,
         deleteMonthlyBudget,
         updateMonthlyBudget,
+        fetchAdjustments,
+        adjustments,
       }}>
       {children}
     </TransactionContext.Provider>

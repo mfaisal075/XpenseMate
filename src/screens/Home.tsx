@@ -16,6 +16,8 @@ import PrivacyPolicy from '../bottom/PrivacyPolicy';
 import ContactUs from '../bottom/ContactUs';
 import AllTxns from '../bottom/AllTxns';
 import BudgetManagement from '../bottom/BudgetManagement';
+import OBAdjustment from '../bottom/OBAdjustment';
+import TwoFactorAuth from '../bottom/TwoFactorAuth';
 
 const Home = ({navigation}: any) => {
   const [selectedTab, setSelectedTab] = useState('Main');
@@ -46,6 +48,15 @@ const Home = ({navigation}: any) => {
   };
   const goToAllTxns = () => {
     setSelectedTab('AllTxns');
+  };
+  const navigateToOBAdjustment = () => {
+    setSelectedTab('OBAdjustment');
+  };
+  const navigateToWallet = () => {
+    setSelectedTab('Wallet');
+  };
+  const navigateToTwoFactorAuth = () => {
+    setSelectedTab('TwoFactorAuth');
   };
 
   const goToNotification = () => {
@@ -117,14 +128,22 @@ const Home = ({navigation}: any) => {
         <Wallet
           tabChange={() => changeTab()}
           navigateToNotification={() => goToNotification()}
+          navigateToOBAdjustment={() => navigateToOBAdjustment()}
         />
+      ) : selectedTab === 'OBAdjustment' ? (
+        <OBAdjustment navigateToWallet={() => navigateToWallet()} />
       ) : selectedTab === 'AccountDetails' ? (
         <AccountDetails
           goToProfile={() => goToProfile()}
           navigateToNotification={() => goToNotification()}
         />
       ) : selectedTab === 'LoginSecurity' ? (
-        <LoginSecurity goToProfile={() => goToProfile()} />
+        <LoginSecurity
+          goToProfile={() => goToProfile()}
+          navigateToTwoFactorAuth={() => navigateToTwoFactorAuth()}
+        />
+      ) : selectedTab === 'TwoFactorAuth' ? (
+        <TwoFactorAuth />
       ) : selectedTab === 'Setting' ? (
         <Setting
           goToProfile={() => goToProfile()}
@@ -155,7 +174,9 @@ const Home = ({navigation}: any) => {
       selectedTab === 'PrivacyPolicy' ||
       selectedTab === 'ContactUs' ||
       selectedTab === 'AllTxns' ||
-      selectedTab === 'BudgetManagement' ? null : (
+      selectedTab === 'BudgetManagement' ||
+      selectedTab === 'OBAdjustment' ||
+      selectedTab === 'TwoFactorAuth' ? null : (
         <View style={styles.barContainer}>
           <TouchableOpacity
             style={styles.btnContainer}

@@ -9,6 +9,7 @@ import {
   initOpeningBalanceTable,
   initSettingsTable,
   initMonthlyBudgetTable,
+  initAdjustmentsTable,
 } from './database';
 import Toast from 'react-native-toast-message';
 import {TransactionProvider} from './src/components/TransactionContext';
@@ -77,6 +78,7 @@ const App = () => {
           initOpeningBalanceTable(),
           initSettingsTable(),
           initMonthlyBudgetTable(),
+          initAdjustmentsTable(),
         ]);
       } catch (error) {
         console.error('Error initializing database:', error);

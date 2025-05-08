@@ -46,7 +46,7 @@ const initialPasswordChangeForm: PasswordChangeForm = {
   confirmPassword: '',
 };
 
-const LoginSecurity = ({goToProfile}: any) => {
+const LoginSecurity = ({goToProfile, navigateToTwoFactorAuth}: any) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [changePasswordForm, setChangePasswordForm] =
@@ -273,9 +273,11 @@ const LoginSecurity = ({goToProfile}: any) => {
             <Icon name="chevron-right" size={24} color="#1B5C58" />
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* Two Factor-Authetication Button */}
+
+          {/* <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => console.log('Two-factor authentication Pressed')}>
+            onPress={() => navigateToTwoFactorAuth()}>
             <View style={styles.buttonContent}>
               <Icon name="shield-key" size={24} color="#1B5C58" />
               <View style={styles.buttonTextContainer}>
@@ -288,7 +290,7 @@ const LoginSecurity = ({goToProfile}: any) => {
               </View>
             </View>
             <Icon name="chevron-right" size={24} color="#1B5C58" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={styles.menuButton}
